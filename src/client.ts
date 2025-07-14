@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import type {
   SDKConfig,
   MonitorPayload,
@@ -176,7 +174,6 @@ async function makeAPICall(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function testApiConnection() {
   try {
     //await makeAPICall();
@@ -274,7 +271,6 @@ async function processBatchQueue() {
   const successfulBatches: Set<number> = new Set();
 
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    //eslint-disable-next-line security/detect-object-injection
     const batch = batches[batchIndex];
     const payloads = batch.map((item) => item.payload);
 
@@ -299,7 +295,6 @@ async function processBatchQueue() {
   let removeCount = 0;
   for (let i = 0; i < batches.length; i++) {
     if (successfulBatches.has(i)) {
-      //eslint-disable-next-line security/detect-object-injection
       removeCount += batches[i].length;
     } else {
       break; // Stop at first failed batch to maintain order

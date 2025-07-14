@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, Middleware } from "./types";
 import { toApiString } from "./utils";

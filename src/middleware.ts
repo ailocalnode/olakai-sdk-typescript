@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import type { Middleware } from "./types";
 
 // Logging middleware
@@ -20,24 +18,16 @@ export function createLoggingMiddleware<TArgs extends any[], TResult>(options: {
     name: "logging",
     beforeCall: async (args: TArgs) => {
       if (includeArgs) {
-        //SR checked : external library
-        // eslint-disable-next-line @typescript-eslint/detect-object-injection
         logger[level]("[Olakai SDK] Calling function with args:", args);
       } else {
-        //SR checked : external library
-        // eslint-disable-next-line @typescript-eslint/detect-object-injection
         logger[level]("[Olakai SDK] Calling function");
       }
       return args;
     },
     afterCall: async (result: TResult, _args: TArgs) => {
       if (includeResult) {
-        //SR checked : external library
-        // eslint-disable-next-line @typescript-eslint/detect-object-injection
         logger[level]("[Olakai SDK] Function completed with result:", result);
       } else {
-        //SR checked : external library
-        // eslint-disable-next-line @typescript-eslint/detect-object-injection
         logger[level]("[Olakai SDK] Function completed successfully");
       }
       return result;

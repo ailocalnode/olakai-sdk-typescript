@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 //TODO SR: See the exact API payload needed
 
 /**export type MonitorPayload = {

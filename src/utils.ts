@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import type { SDKConfig, MonitorOptions } from "./types";
 
 // Common patterns for sanitizing sensitive data
