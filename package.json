@@ -10,6 +10,10 @@
   "author": "Olakai Corporation",
   "license": "ISC",
   "dependencies": {
+    "pnpm": "^10.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.13",
     "typescript": "^5.8.3"
   }
 }
