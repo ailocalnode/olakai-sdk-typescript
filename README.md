@@ -133,35 +133,6 @@ addMiddleware(
 );
 ```
 
-## Metrics Collection
-
-```typescript
-import { getGlobalMetrics, createMetricsCollector } from "@olakai/api-sdk";
-
-// Use global metrics
-const globalMetrics = getGlobalMetrics();
-
-// Get snapshot of all functions
-const allMetrics = globalMetrics.getSnapshot();
-console.log("All metrics:", allMetrics);
-
-// Get metrics for specific function
-const loginMetrics = globalMetrics.getSnapshot("userLogin");
-console.log("Login success rate:", loginMetrics.successRate);
-console.log("Average duration:", loginMetrics.averageDuration);
-
-// Get performance percentiles
-const percentiles = globalMetrics.getPercentiles("userLogin", [50, 90, 95, 99]);
-console.log("P95 duration:", percentiles.p95);
-
-// Get error patterns
-const errorPatterns = globalMetrics.getErrorPatterns();
-console.log("Common errors:", errorPatterns);
-
-// Export all data for external analysis
-const exportData = globalMetrics.exportData();
-```
-
 ## Custom Middleware Example
 
 ```typescript
