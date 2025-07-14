@@ -3,6 +3,8 @@ import type {
   MonitorPayload,
   BatchRequest,
   APIResponse,
+  ControlPayload,
+  ControlResponse,
 } from "./types";
 import packageJson from "../package.json";
 
@@ -387,4 +389,116 @@ export async function flushQueue(): Promise<void> {
     console.log("[Olakai SDK] Flushing queue");
   }
   await processBatchQueue();
+}
+
+/**
+ * Make a control API call to check if execution should be allowed
+ * @param payload - The control payload to send
+ * @param endpoint - Optional custom endpoint for control checks
+ * @param timeout - Custom timeout for this request
+ * @returns A promise that resolves to the control response
+ */
+async function makeControlAPICall(
+  payload: ControlPayload,
+  endpoint?: string,
+  timeout?: number,
+): Promise<ControlResponse> {
+  if (!config.apiKey) {
+    throw new Error("[Olakai SDK] API key is not set");
+  }
+
+  const controlEndpoint = endpoint || config.apiUrl!.replace('/monitoring/prompt', '/control/check');
+  const requestTimeout = timeout || config.timeout;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+
+  try {
+    const response = await fetch(controlEndpoint, {
+      method: "POST",
+      headers: {
+        "x-api-key": config.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (config.verbose) {
+      console.log("[Olakai SDK] Control API response:", response);
+    }
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // Ensure the response has the expected structure
+    if (typeof result.allowed !== 'boolean') {
+      throw new Error("Invalid control response: missing 'allowed' field");
+    }
+    
+    return result;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+/**
+ * Send a payload to the control API with retry logic
+ * @param payload - The control payload to send
+ * @param options - The options for the control API call
+ * @returns A promise that resolves to the control response
+ */
+export async function sendToControlAPI(
+  payload: ControlPayload,
+  options: {
+    endpoint?: string;
+    retries?: number;
+    timeout?: number;
+    priority?: "low" | "normal" | "high";
+  } = {},
+): Promise<ControlResponse> {
+  if (!config.apiKey) {
+    throw new Error("[Olakai SDK] API key is not set");
+  }
+
+  const maxRetries = options.retries ?? config.retries!;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await makeControlAPICall(payload, options.endpoint, options.timeout);
+      return response;
+    } catch (err) {
+      lastError = err as Error;
+
+      if (config.debug) {
+        console.warn(
+          `[Olakai SDK] Control API attempt ${attempt + 1}/${maxRetries + 1} failed:`,
+          err,
+        );
+      }
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+        await sleep(delay);
+      }
+    }
+  }
+
+  if (config.onError && lastError) {
+    config.onError(lastError);
+  }
+
+  if (config.debug) {
+    console.error("[Olakai SDK] All control API retry attempts failed:", lastError);
+  }
+
+  throw lastError;
 }

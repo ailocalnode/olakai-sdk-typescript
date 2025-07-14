@@ -1,5 +1,5 @@
-import { sendToAPI, getConfig } from "./client";
-import type { MonitorOptions, Middleware } from "./types";
+import { sendToAPI, sendToControlAPI, getConfig } from "./client";
+import type { MonitorOptions, Middleware, ControlPayload, ControlResponse, ControlOptions } from "./types";
 import { toApiString } from "./utils";
 
 // Global middleware registry
@@ -38,11 +38,83 @@ function shouldMonitor<TArgs extends any[]>(
   return true;
 }
 
-function shouldControl<TArgs extends any[]>(
+async function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
-): boolean {
-  return false;
+): Promise<boolean> {
+  const controlOptions = options.control;
+  
+  // If control is not configured, allow execution
+  if (!controlOptions) {
+    return false;
+  }
+  
+  // Check if control is enabled
+  if (typeof controlOptions.enabled === "boolean" && !controlOptions.enabled) {
+    return false;
+  }
+  if (typeof controlOptions.enabled === "function" && !controlOptions.enabled(args)) {
+    return false;
+  }
+  
+  try {
+    const config = getConfig();
+    
+    // Prepare input for control check
+    const input = controlOptions.captureInput(args);
+    
+    // Sanitize input if required
+    const sanitizedInput = controlOptions.sanitize 
+      ? sanitizeData(input, config.sanitizePatterns)
+      : input;
+    
+    // Create control payload
+    const payload: ControlPayload = {
+      input: sanitizedInput,
+    };
+    
+    // Send control request
+    const response: ControlResponse = await sendToControlAPI(payload, {
+      endpoint: controlOptions.endpoint,
+      retries: controlOptions.retries,
+      timeout: controlOptions.timeout,
+      priority: controlOptions.priority,
+    });
+    
+    if (config.verbose) {
+      console.log("[Olakai SDK] Control response:", response);
+    }
+    
+    // If not allowed, handle the blocking
+    if (!response.allowed) {
+      if (controlOptions.onBlocked) {
+        // Let the developer handle the blocking
+        controlOptions.onBlocked(args, response);
+        // If onBlocked doesn't throw, we assume execution should be blocked
+        return true;
+      } else {
+        // Default behavior: throw an error
+        throw new Error(`Function execution blocked: ${response.reason || 'No reason provided'}`);
+      }
+    }
+    
+    return false; // Allow execution
+    
+  } catch (error) {
+    if (controlOptions.onError) {
+      // Let the developer decide what to do on error
+      const shouldAllow = controlOptions.onError(error, args);
+      if (shouldAllow) {
+        if (getConfig().verbose) {
+          console.log("[Olakai SDK] Control error handled, allowing execution");
+        }
+        return false; // Allow execution
+      }
+    }
+    
+    // If no error handler or it returns false, re-throw the error
+    throw error;
+  }
 }
 
 /**
@@ -217,17 +289,19 @@ export function monitor<TArgs extends any[], TResult>(
       //========== Check if we should control this call
       let shouldControlCall = false;
       try {
-        shouldControlCall = shouldControl(options, args);
+        shouldControlCall = await shouldControl(options, args);
       } catch (error) {
-        safeMonitoringOperation(() => {
-          throw error;
-        }, "shouldControl check");
+        // If shouldControl throws an error, it means execution was blocked
+        // We should re-throw this error to prevent function execution
+        throw error;
       }
       //========== End of shouldControl check
 
-      //========== If we should not control, execute the function
+      //========== If we should control (block execution), return early
       if (shouldControlCall) {
-        //TODO SR: Implement control logic
+        // This should not happen in normal flow as shouldControl throws on block
+        // But kept for safety
+        throw new Error("Function execution blocked by control logic");
       }
 
       // Safely apply beforeCall middleware

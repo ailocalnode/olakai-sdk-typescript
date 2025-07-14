@@ -9,6 +9,21 @@ export type MonitorPayload = {
 };
 
 /**
+ * Configuration for control behavior
+ */
+export type ControlOptions<TArgs extends any[]> = {
+  enabled?: boolean | ((args: TArgs) => boolean);
+  endpoint?: string; // Optional separate endpoint for control checks
+  timeout?: number; // Timeout for the control API call
+  retries?: number; // Number of retries for failed control API calls
+  captureInput: (args: TArgs) => any; // Function to extract input for control check
+  onBlocked?: (args: TArgs, controlResponse: any) => void | never; // Handler when control blocks execution
+  onError?: (error: any, args: TArgs) => boolean; // Handler for control API errors, return true to allow execution
+  sanitize?: boolean; // Whether to sanitize input before sending to control API
+  priority?: "low" | "normal" | "high"; // Priority for control API calls
+};
+
+/**
  * Configuration for each monitored function
  */
 export type MonitorOptions<TArgs extends any[], TResult> = {
@@ -34,6 +49,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   tags?: Record<string, string>; // Additional tags for filtering
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
+  control?: ControlOptions<TArgs>; // Control configuration
 };
 
 /**
@@ -68,6 +84,16 @@ export type APIResponse = {
   success: boolean;
   message?: string;
   errors?: string[];
+};
+
+export type ControlPayload = {
+  input: any;
+};
+
+export type ControlResponse = {
+  allowed: boolean;
+  reason?: string;
+  metadata?: Record<string, any>;
 };
 
 export type Middleware<TArgs extends any[], TResult> = {
