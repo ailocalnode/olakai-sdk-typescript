@@ -158,11 +158,6 @@ export class ConfigBuilder {
     return this;
   }
 
-  environment(env: string): ConfigBuilder {
-    this.config.environment = env;
-    return this;
-  }
-
   version(v: string): ConfigBuilder {
     this.config.version = v;
     return this;

@@ -38,8 +38,13 @@ function shouldMonitor<TArgs extends any[]>(
   return true;
 }
 
-//TODO XC : See if we need this
-//TODO SR : See if we need this
+function shouldControl<TArgs extends any[]>(
+  options: MonitorOptions<TArgs, any>,
+  args: TArgs,
+): boolean {
+  return true;
+}
+
 /**
  * Sanitize data by replacing sensitive information with a placeholder
  * @param data - The data to sanitize
@@ -172,7 +177,8 @@ export function monitor<TArgs extends any[], TResult>(
   const options = arg1 as MonitorOptions<TArgs, TResult>;
   return (fn: (...args: TArgs) => Promise<TResult>) => {
     return async (...args: TArgs): Promise<TResult> => {
-      // Check if we should monitor this call - if not, just execute the function
+
+      //========== Check if we should monitor this call - if not, just execute the function
       let shouldMonitorCall = false;
       try {
         shouldMonitorCall = shouldMonitor(options, args);
@@ -183,11 +189,14 @@ export function monitor<TArgs extends any[], TResult>(
         // If monitoring check fails, still execute the function
         return fn(...args);
       }
+      //========== End of shouldMonitor check
 
+      //========== If we should not monitor, execute the function
       if (!shouldMonitorCall) {
         return fn(...args);
       }
 
+      //========== If we should monitor, initialize monitoring data
       let config: any;
       let start: number;
       let processedArgs = args;
@@ -202,6 +211,23 @@ export function monitor<TArgs extends any[], TResult>(
         }, "monitoring initialization");
         // If monitoring setup fails, still execute the function
         return fn(...args);
+      }
+      //========== End of monitoring initialization
+
+      //========== Check if we should control this call
+      let shouldControlCall = false;
+      try {
+        shouldControlCall = shouldControl(options, args);
+      } catch (error) {
+        safeMonitoringOperation(() => {
+          throw error;
+        }, "shouldControl check");
+      }
+      //========== End of shouldControl check
+
+      //========== If we should not control, execute the function
+      if (shouldControlCall) {
+        //TODO SR: Implement control logic
       }
 
       // Safely apply beforeCall middleware
@@ -309,8 +335,8 @@ export function monitor<TArgs extends any[], TResult>(
           }, "success monitoring");
         }
       }
-
-      return result!; // We know result is defined if we get here (no function error)
+      //========== End of monitoring operations
+      return result; // We know result is defined if we get here (no function error)
     };
   };
 }

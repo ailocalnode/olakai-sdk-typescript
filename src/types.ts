@@ -42,8 +42,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 export type SDKConfig = {
   apiKey: string;
   apiUrl: string;
-  environment?: string;
-  version?: string;
+  version: string;
   batchSize?: number;
   batchTimeout?: number;
   retries?: number;

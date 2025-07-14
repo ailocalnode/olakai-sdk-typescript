@@ -4,6 +4,7 @@ import type {
   BatchRequest,
   APIResponse,
 } from "./types";
+import packageJson from "../package.json";
 
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
@@ -18,6 +19,7 @@ let config: SDKConfig = {
   enableLocalStorage: true,
   localStorageKey: "olakai-sdk-queue",
   maxLocalStorageSize: 1000000, // 1MB
+  version: packageJson.version,
   debug: false,
   verbose: false,
 };
