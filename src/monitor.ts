@@ -42,7 +42,7 @@ function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
 ): boolean {
-  return true;
+  return false;
 }
 
 /**
