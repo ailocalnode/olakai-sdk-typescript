@@ -30,7 +30,6 @@ function shouldMonitor<TArgs extends any[]>(
   if (typeof options.enabled === "function" && !options.enabled(args)) {
     return false;
   }
-
   // Check sample rate
   if (options.sampleRate !== undefined && Math.random() > options.sampleRate) {
     return false;

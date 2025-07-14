@@ -5,12 +5,12 @@ import type {
   APIResponse,
 } from "./types";
 
-const subdomain = "staging.app"; // TODO SR: make this dynamic
+const subdomain = "staging.app";
 const isBatchingEnabled = false;
 
 let config: SDKConfig = {
   apiKey: "",
-  apiUrl: `https://${subdomain}.olakai.ai/api/monitoring/prompt`, // needs to be set when we have an endpoint
+  apiUrl: `https://${subdomain}.olakai.ai`,
   batchSize: 10,
   batchTimeout: 5000, // 5 seconds
   retries: 3,
@@ -40,12 +40,27 @@ if (typeof window !== "undefined") {
  * Initialize the SDK
  * @param keyOrConfig - The API key or configuration object
  */
-export function initClient(keyOrConfig: string | SDKConfig) {
-  if (typeof keyOrConfig === "string") {
-    config.apiKey = keyOrConfig;
-  } else {
-    config = { ...config, ...keyOrConfig };
+export function initClient(
+  apiKey?: string,
+  domainUrl?: string,
+  sdkConfig?: SDKConfig,
+) {
+  if (apiKey) {
+    config.apiKey = apiKey;
   }
+  if (domainUrl) {
+    config.apiUrl = domainUrl;
+  }
+  if (sdkConfig) {
+    config = { ...config, ...sdkConfig };
+  }
+  if (!config.apiUrl) {
+    throw new Error("[Olakai SDK] API URL is not set");
+  }
+  if (!config.apiKey) {
+    throw new Error("[Olakai SDK] API key is not set");
+  }
+  config.apiUrl = `${config.apiUrl}/api/monitoring/prompt`;
   if (config.verbose) {
     console.log("[Olakai SDK] Config:", config);
   }

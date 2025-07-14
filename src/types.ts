@@ -1,26 +1,6 @@
-//TODO SR: See the exact API payload needed
-
-/**export type MonitorPayload = {
-  userId: string;
-  chatId: string;
-  name: string;
-  prompt: string;
-  response: string;
-  durationMs: number;
-  timestamp: string;
-  error?: boolean;
-  errorMessage?: string;
-  stackTrace?: string;
-  metadata?: Record<string, any>;
-
-  environment?: string;
-  version?: string;
-};
-*/
-
 export type MonitorPayload = {
-  userId: string;
-  chatId: string;
+  userId?: string;
+  chatId?: string;
   prompt: string;
   response: string;
   tokens?: number;
@@ -61,7 +41,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
  */
 export type SDKConfig = {
   apiKey: string;
-  apiUrl?: string;
+  apiUrl: string;
   environment?: string;
   version?: string;
   batchSize?: number;
@@ -84,14 +64,12 @@ export type BatchRequest = {
   retries: number;
   priority: "low" | "normal" | "high";
 };
-// Don't know if there is one yet
+
 export type APIResponse = {
   success: boolean;
   message?: string;
   errors?: string[];
 };
-
-export type FilterFunction<TArgs extends any[]> = (args: TArgs) => boolean;
 
 export type Middleware<TArgs extends any[], TResult> = {
   name: string;
