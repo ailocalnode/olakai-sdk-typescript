@@ -69,8 +69,6 @@ export function initClient(keyOrConfig: string | SDKConfig) {
     }
   }
 
-  //testApiConnection();
-
   // Start processing queue if we have items and we're online
   if (batchQueue.length > 0 && isOnline) {
     if (config.verbose) {
@@ -171,14 +169,6 @@ async function makeAPICall(
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
-  }
-}
-
-async function testApiConnection() {
-  try {
-    //await makeAPICall();
-  } catch (err) {
-    console.error("[Olakai SDK] Failed to connect to API:", err);
   }
 }
 
