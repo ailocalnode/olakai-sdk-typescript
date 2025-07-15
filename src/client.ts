@@ -7,7 +7,6 @@ import type {
   ControlResponse,
 } from "./types";
 import packageJson from "../package.json";
-
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
 
@@ -183,7 +182,7 @@ async function makeAPICall(
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as Record<string, any>;
     return { success: true, ...result };
   } catch (err) {
     clearTimeout(timeoutId);
@@ -434,14 +433,14 @@ async function makeControlAPICall(
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as any;
     
     // Ensure the response has the expected structure
     if (typeof result.allowed !== 'boolean') {
       throw new Error("Invalid control response: missing 'allowed' field");
     }
     
-    return result;
+    return result as ControlResponse;
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
