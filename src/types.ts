@@ -41,6 +41,9 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
     output: any;
     metadata?: Record<string, any>;
   };
+  // Dynamic chat and user identification
+  chatId?: string | ((args: TArgs) => string);
+  userId?: string | ((args: TArgs) => string);
   // May be deprecated if not needed
   enabled?: boolean | ((args: TArgs) => boolean);
   sampleRate?: number; // 0-1, percentage of calls to monitor

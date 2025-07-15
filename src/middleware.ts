@@ -148,7 +148,9 @@ export function createCachingMiddleware<TArgs extends any[], TResult>(options: {
       // Implement LRU eviction if cache is full
       if (cache.size >= maxSize) {
         const firstKey = cache.keys().next().value;
-        cache.delete(firstKey);
+        if (firstKey) {
+          cache.delete(firstKey);
+        }
       }
 
       cache.set(key, {

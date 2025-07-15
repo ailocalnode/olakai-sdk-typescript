@@ -216,6 +216,27 @@ function safeMonitoringOperation(
 }
 
 /**
+ * Resolve dynamic chatId and userId from options
+ * @param options - Monitor options
+ * @param args - Function arguments
+ * @returns Object with resolved chatId and userId
+ */
+function resolveIdentifiers<TArgs extends any[]>(
+  options: MonitorOptions<TArgs, any>,
+  args: TArgs,
+): { chatId: string; userId: string } {
+  const chatId = typeof options.chatId === "function" 
+    ? options.chatId(args) 
+    : options.chatId || "123";
+  
+  const userId = typeof options.userId === "function"
+    ? options.userId(args)
+    : options.userId || "anonymous";
+    
+  return { chatId, userId };
+}
+
+/**
  * Monitor a function
  * @param options - The options for the monitored function
  * @param fn - The function to monitor
@@ -342,14 +363,16 @@ export function monitor<TArgs extends any[], TResult>(
               const errorResult = options.onError(functionError, processedArgs);
               const errorInfo = createErrorInfo(functionError);
 
+              const { chatId, userId } = resolveIdentifiers(options, args);
+
               const payload = {
                 prompt: "",
                 response: "",
                 errorMessage:
                   toApiString(errorInfo.errorMessage) +
                   toApiString(errorResult),
-                chatId: "123",
-                userId: "anonymous",
+                chatId: toApiString(chatId),
+                userId: toApiString(userId),
               };
 
               await sendToAPI(payload, {
@@ -387,11 +410,13 @@ export function monitor<TArgs extends any[], TResult>(
               ? sanitizeData(captureResult.output, config.sanitizePatterns)
               : captureResult.output;
 
+            const { chatId, userId } = resolveIdentifiers(options, args);
+
             const payload = {
               prompt: toApiString(prompt),
               response: toApiString(response),
-              chatId: "123",
-              userId: "anonymous",
+              chatId: toApiString(chatId),
+              userId: toApiString(userId),
               tokens: 0,
               requestTime: Number(Date.now() - start),
             };
