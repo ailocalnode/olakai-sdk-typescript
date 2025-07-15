@@ -202,7 +202,7 @@ function safeMonitoringOperation(
     // Call global error handler if configured
     if (config.onError) {
       try {
-        config.onError(error);
+        config.onError(error as Error);
       } catch (handlerError) {
         if (config.debug) {
           console.warn(
