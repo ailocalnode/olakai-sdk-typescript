@@ -5,6 +5,7 @@ export * from "./caching";
 export * from "./circuitBreaker";
 export * from "./common";
 export * from "./transform";
+export * from "./custom";
 
 export type Middleware<TArgs extends any[], TResult> = {
     name: string;

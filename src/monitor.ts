@@ -1,5 +1,6 @@
 import { sendToAPI, sendToControlAPI, getConfig } from "./client";
-import type { MonitorOptions, Middleware, ControlPayload, ControlResponse, ControlOptions } from "./types";
+import type { MonitorOptions, ControlPayload, ControlResponse } from "./types";
+import type { Middleware } from "./middleware";
 import { toApiString } from "./utils";
 
 // Global middleware registry
