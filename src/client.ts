@@ -6,7 +6,7 @@ import type {
   ControlPayload,
   ControlResponse,
 } from "./types";
-import { initStorage, getStorage } from "./storage";
+import { initStorage, getStorage } from "./storage/index";
 import packageJson from "../package.json";
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
