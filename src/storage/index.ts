@@ -3,6 +3,7 @@ import { LocalStorageAdapter } from './localStorage';
 import { MemoryStorageAdapter } from './memoryStorage';
 import { FileStorageAdapter } from './fileStorage';
 import { NoOpStorageAdapter } from './noOpStorage';
+import { SDKConfig } from '../types';
 
 
 export interface StorageAdapter {
@@ -131,4 +132,17 @@ export function getStorage(): StorageAdapter {
     storageInstance = createStorageAdapter('auto');
   }
   return storageInstance;
-} 
+}
+
+// Helper functions to get effective config values with backwards compatibility
+export function isStorageEnabled(config: SDKConfig): boolean {
+  return config.enableStorage ?? true;
+}
+//TODO : Not good if it's server stored
+export function getStorageKey(config: SDKConfig): string {
+  return config.storageKey ?? "olakai-sdk-queue";
+}
+
+export function getMaxStorageSize(config: SDKConfig): number {
+  return config.maxStorageSize ?? 1000000;
+}

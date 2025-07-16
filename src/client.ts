@@ -6,7 +6,7 @@ import type {
   ControlPayload,
   ControlResponse,
 } from "./types";
-import { initStorage, getStorage } from "./storage/index";
+import { initStorage, getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from "./storage/index";
 import packageJson from "../package.json";
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
@@ -33,18 +33,6 @@ let batchQueue: BatchRequest[] = [];
 let batchTimer: NodeJS.Timeout | null = null;
 let isOnline = true; // Default to online for server environments
 
-// Helper functions to get effective config values with backwards compatibility
-function isStorageEnabled(): boolean {
-  return config.enableStorage ?? true;
-}
-//TODO : Not good if it's server stored
-function getStorageKey(): string {
-  return config.storageKey ?? "olakai-sdk-queue";
-}
-
-function getMaxStorageSize(): number {
-  return config.maxStorageSize ?? 1000000;
-}
 
 // Setup online/offline detection for browser environments
 function initOnlineDetection() {
@@ -106,11 +94,11 @@ export function initClient(
   initOnlineDetection();
   
   // Initialize storage and load any persisted queue
-  const storageType = isStorageEnabled() ? config.storageType : 'disabled';
+  const storageType = isStorageEnabled(config) ? config.storageType : 'disabled';
   const storage = initStorage(storageType, config.cacheDirectory);
-  if (isStorageEnabled()) {
+  if (isStorageEnabled(config)) {
     try {
-      const stored = storage.getItem(getStorageKey());
+      const stored = storage.getItem(getStorageKey(config));
       if (stored) {
         const parsedQueue = JSON.parse(stored);
         batchQueue.push(...parsedQueue);
@@ -148,12 +136,12 @@ export function getConfig(): SDKConfig {
  * Persist the queue to storage
  */
 function persistQueue() {
-  if (!isStorageEnabled()) return;
+  if (!isStorageEnabled(config)) return;
 
   try {
     const storage = getStorage();
     const serialized = JSON.stringify(batchQueue);
-    const maxSize = getMaxStorageSize();
+    const maxSize = getMaxStorageSize(config);
     if (serialized.length > maxSize) {
       // Remove oldest items if queue is too large
       const targetSize = Math.floor(maxSize * 0.8);
@@ -164,7 +152,7 @@ function persistQueue() {
         batchQueue.shift();
       }
     }
-    storage.setItem(getStorageKey(), JSON.stringify(batchQueue));
+    storage.setItem(getStorageKey(config), JSON.stringify(batchQueue));
     if (config.verbose) {
       console.log("[Olakai SDK] Persisted queue to storage");
     }
@@ -417,9 +405,9 @@ export function getQueueSize(): number {
 
 export function clearQueue(): void {
   batchQueue = [];
-  if (isStorageEnabled()) {
+  if (isStorageEnabled(config)) {
     const storage = getStorage();
-    storage.removeItem(getStorageKey());
+    storage.removeItem(getStorageKey(config));
     if (config.verbose) {
       console.log("[Olakai SDK] Cleared queue from storage");
     }
