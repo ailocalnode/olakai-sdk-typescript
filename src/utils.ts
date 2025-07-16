@@ -48,10 +48,10 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
   }
 
   if (
-    config.maxLocalStorageSize !== undefined &&
-    config.maxLocalStorageSize <= 0
+    config.maxStorageSize !== undefined &&
+    config.maxStorageSize <= 0
   ) {
-    errors.push("Max local storage size must be positive");
+    errors.push("Max storage size must be positive");
   }
 
   return errors;
@@ -129,21 +129,6 @@ export function getEnvironment(): string {
   return "unknown";
 }
 
-// Check if localStorage is available
-export function isLocalStorageAvailable(): boolean {
-  try {
-    if (typeof localStorage === "undefined") {
-      return false;
-    }
-    const test = "__test__";
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 // Create a configuration builder pattern
 export class ConfigBuilder {
   private config: Partial<SDKConfig> = {};
@@ -183,18 +168,18 @@ export class ConfigBuilder {
     return this;
   }
 
-  enableLocalStorage(enable: boolean = true): ConfigBuilder {
-    this.config.enableLocalStorage = enable;
+  enableStorage(enable: boolean = true): ConfigBuilder {
+    this.config.enableStorage = enable;
     return this;
   }
 
-  localStorageKey(key: string): ConfigBuilder {
-    this.config.localStorageKey = key;
+  storageKey(key: string): ConfigBuilder {
+    this.config.storageKey = key;
     return this;
   }
 
-  maxLocalStorageSize(size: number): ConfigBuilder {
-    this.config.maxLocalStorageSize = size;
+  maxStorageSize(size: number): ConfigBuilder {
+    this.config.maxStorageSize = size;
     return this;
   }
 
@@ -226,12 +211,13 @@ export class ConfigBuilder {
       batchTimeout: 5000,
       retries: 3,
       timeout: 10000,
-      enableLocalStorage: true,
-      localStorageKey: "olakai-sdk-queue",
-      maxLocalStorageSize: 1000000,
+      enableStorage: true,
+      storageKey: "olakai-sdk-queue",
+      maxStorageSize: 1000000,
+      onError: (_error: Error) => {},
+      sanitizePatterns: DEFAULT_SANITIZE_PATTERNS,
       debug: false,
       verbose: false,
-      sanitizePatterns: DEFAULT_SANITIZE_PATTERNS,
       ...this.config,
     } as SDKConfig;
   }

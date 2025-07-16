@@ -18,11 +18,8 @@ let config: SDKConfig = {
   batchTimeout: 5000, // 5 seconds
   retries: 3,
   timeout: 20000, // 20 seconds
-  enableLocalStorage: true, // Legacy - kept for backwards compatibility
   enableStorage: true, // New generic storage enabling
-  localStorageKey: "olakai-sdk-queue", // Legacy - kept for backwards compatibility
   storageKey: "olakai-sdk-queue", // New generic storage key
-  maxLocalStorageSize: 1000000, // Legacy - kept for backwards compatibility (1MB)
   maxStorageSize: 1000000, // New generic max storage size (1MB)
   onError: (_error: Error) => {},
   sanitizePatterns: [],
@@ -37,15 +34,15 @@ let isOnline = true; // Default to online for server environments
 
 // Helper functions to get effective config values with backwards compatibility
 function isStorageEnabled(): boolean {
-  return config.enableStorage ?? config.enableLocalStorage ?? true;
+  return config.enableStorage ?? true;
 }
-
+//TODO : Not good if it's server stored
 function getStorageKey(): string {
-  return config.storageKey ?? config.localStorageKey ?? "olakai-sdk-queue";
+  return config.storageKey ?? "olakai-sdk-queue";
 }
 
 function getMaxStorageSize(): number {
-  return config.maxStorageSize ?? config.maxLocalStorageSize ?? 1000000;
+  return config.maxStorageSize ?? 1000000;
 }
 
 // Setup online/offline detection for browser environments

@@ -27,7 +27,6 @@ export {
   generateId,
   formatDuration,
   getEnvironment,
-  isLocalStorageAvailable,
   ConfigBuilder,
   createConfig,
   DEFAULT_SANITIZE_PATTERNS,
