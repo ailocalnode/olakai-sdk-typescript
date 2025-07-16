@@ -1,3 +1,5 @@
+import { isBrowser, isNodeJS } from './utils';
+
 // Conditional imports for Node.js modules to avoid errors in browser environments
 let fs: any, path: any, os: any;
 
@@ -198,17 +200,6 @@ class NoOpStorageAdapter implements StorageAdapter {
   clear(): void {
     // No-op
   }
-}
-
-/**
- * Environment detection utilities
- */
-function isBrowser(): boolean {
-  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-}
-
-function isNodeJS(): boolean {
-  return typeof process !== 'undefined' && process.versions && process.versions.node !== 'false';
 }
 
 function isContainerized(): boolean {

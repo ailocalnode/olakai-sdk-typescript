@@ -240,3 +240,14 @@ export function toApiString(val: any): string {
   }
   return String(val);
 }
+
+/**
+ * Environment detection utilities
+ */
+export function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
+export function isNodeJS(): boolean {
+  return typeof process !== 'undefined' && process.versions && process.versions.node !== 'false';
+}
