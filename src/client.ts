@@ -13,7 +13,7 @@ const isBatchingEnabled = false;
 
 let config: SDKConfig = {
   apiKey: "",
-  apiUrl: `https://${subdomain}.olakai.ai`,
+  domainUrl: `https://${subdomain}.olakai.ai`,
   batchSize: 10,
   batchTimeout: 5000, // 5 seconds
   retries: 3,
@@ -71,20 +71,20 @@ export async function initClient(
     config.apiKey = apiKey;
   }
   if (domainUrl) {
-    config.apiUrl = domainUrl;
+    config.domainUrl = domainUrl;
   }
   
   // Apply any additional config properties
   if (Object.keys(restConfig).length > 0) {
     config = { ...config, ...restConfig };
   }
-  if (!config.apiUrl) {
+  if (!config.domainUrl) {
     throw new Error("[Olakai SDK] API URL is not set");
   }
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
-  config.apiUrl = `${config.apiUrl}/api/monitoring/prompt`;
+  config.domainUrl = `${config.domainUrl}/api/monitoring/prompt`;
   if (config.verbose) {
     console.log("[Olakai SDK] Config:", config);
   }
@@ -142,7 +142,7 @@ async function makeAPICall(
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
 
   try {
-    const response = await fetch(config.apiUrl!, {
+    const response = await fetch(config.domainUrl!, {
       method: "POST",
       headers: {
         "x-api-key": config.apiKey,
@@ -268,7 +268,7 @@ async function makeControlAPICall(
     throw new Error("[Olakai SDK] API key is not set");
   }
 
-  const controlEndpoint = endpoint || config.apiUrl!.replace('/monitoring/prompt', '/control/check');
+  const controlEndpoint = endpoint || config.domainUrl!.replace('/monitoring/prompt', '/control/check');
   const requestTimeout = timeout || config.timeout;
   
   const controller = new AbortController();
