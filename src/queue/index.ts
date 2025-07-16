@@ -239,8 +239,9 @@ let queueManager: QueueManager | null = null;
 /**
  * Initialize the queue manager
  */
-export function initQueueManager(dependencies: QueueDependencies): QueueManager {
+export async function initQueueManager(dependencies: QueueDependencies): Promise<QueueManager> {
   queueManager = new QueueManager(dependencies);
+  await queueManager.initialize();
   return queueManager;
 }
 

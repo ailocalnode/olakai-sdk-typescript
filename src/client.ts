@@ -91,8 +91,7 @@ export async function initClient(
     sendWithRetry: sendWithRetry
   };
 
-  const queueManager = initQueueManager(queueDependencies);
-  await queueManager.initialize();
+  await initQueueManager(queueDependencies);
 }
 
 /**
@@ -227,6 +226,7 @@ export async function sendToAPI(
 }
 
 // Re-export queue utility functions
+export { getQueueSize, clearQueue, flushQueue, getQueueManager } from './queue';
 
 
 /**
