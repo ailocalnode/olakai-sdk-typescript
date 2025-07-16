@@ -8,12 +8,11 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies } from "./queue";
 import packageJson from "../package.json";
-const subdomain = "staging.app";
 const isBatchingEnabled = false;
 
 let config: SDKConfig = {
   apiKey: "",
-  domainUrl: `https://${subdomain}.olakai.ai`,
+  domainUrl: "",
   batchSize: 10,
   batchTimeout: 5000, // 5 seconds
   retries: 3,
@@ -58,8 +57,6 @@ function initOnlineDetection() {
  */
 export async function initClient(
   options: Partial<SDKConfig & {
-    apiKey?: string;
-    domainUrl?: string;
     [key: string]: any;
   }> = {}
 ) {
