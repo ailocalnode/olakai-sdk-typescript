@@ -42,15 +42,14 @@ function initOnlineDetection() {
  * @param keyOrConfig - The API key or configuration object
  */
 export async function initClient(
-  options: Partial<SDKConfig & {
-    [key: string]: any;
-  }> = {}
+  apiKey: string,
+  domainUrl: string,
+  options: Partial<SDKConfig> = {}
 ) {
   // Extract known parameters
-  const {...restConfig } = options;
   const configBuilder = new ConfigBuilder();
-  configBuilder.apiKey(options.apiKey || "");
-  configBuilder.domainUrl(options.domainUrl || "");
+  configBuilder.apiKey(apiKey);
+  configBuilder.domainUrl(domainUrl);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
   configBuilder.retries(options.retries || 3);
