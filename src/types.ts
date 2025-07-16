@@ -100,10 +100,3 @@ export type ControlResponse = {
   reason?: string;
   metadata?: Record<string, any>;
 };
-
-export type Middleware<TArgs extends any[], TResult> = {
-  name: string;
-  beforeCall?: (args: TArgs) => TArgs | Promise<TArgs>;
-  afterCall?: (result: TResult, args: TArgs) => TResult | Promise<TResult>;
-  onError?: (error: any, args: TArgs) => void | Promise<void>;
-};
