@@ -6,6 +6,7 @@ import type {
   ControlPayload,
   ControlResponse,
 } from "./types";
+import { initStorage, getStorage } from "./storage";
 import packageJson from "../package.json";
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
@@ -17,9 +18,12 @@ let config: SDKConfig = {
   batchTimeout: 5000, // 5 seconds
   retries: 3,
   timeout: 20000, // 20 seconds
-  enableLocalStorage: true,
-  localStorageKey: "olakai-sdk-queue",
-  maxLocalStorageSize: 1000000, // 1MB
+  enableLocalStorage: true, // Legacy - kept for backwards compatibility
+  enableStorage: true, // New generic storage enabling
+  localStorageKey: "olakai-sdk-queue", // Legacy - kept for backwards compatibility
+  storageKey: "olakai-sdk-queue", // New generic storage key
+  maxLocalStorageSize: 1000000, // Legacy - kept for backwards compatibility (1MB)
+  maxStorageSize: 1000000, // New generic max storage size (1MB)
   version: packageJson.version,
   debug: false,
   verbose: false,
@@ -27,18 +31,41 @@ let config: SDKConfig = {
 
 let batchQueue: BatchRequest[] = [];
 let batchTimer: NodeJS.Timeout | null = null;
-let isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+let isOnline = true; // Default to online for server environments
 
-// Setup online/offline listeners
-if (typeof window !== "undefined") {
-  window.addEventListener("online", () => {
-    isOnline = true;
-    processBatchQueue();
-  });
-  window.addEventListener("offline", () => {
-    isOnline = false;
-  });
+// Helper functions to get effective config values with backwards compatibility
+function isStorageEnabled(): boolean {
+  return config.enableStorage ?? config.enableLocalStorage ?? true;
 }
+
+function getStorageKey(): string {
+  return config.storageKey ?? config.localStorageKey ?? "olakai-sdk-queue";
+}
+
+function getMaxStorageSize(): number {
+  return config.maxStorageSize ?? config.maxLocalStorageSize ?? 1000000;
+}
+
+// Setup online/offline detection for browser environments
+function initOnlineDetection() {
+  if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+    // Browser environment - use navigator.onLine and window events
+    isOnline = navigator.onLine;
+    
+    window.addEventListener("online", () => {
+      isOnline = true;
+      processBatchQueue();
+    });
+    window.addEventListener("offline", () => {
+      isOnline = false;
+    });
+  } else {
+    // Server environment - assume always online
+    // Could be enhanced with network connectivity checks if needed
+    isOnline = true;
+  }
+}
+
 /**
  * Initialize the SDK
  * @param keyOrConfig - The API key or configuration object
@@ -67,22 +94,26 @@ export function initClient(
   if (config.verbose) {
     console.log("[Olakai SDK] Config:", config);
   }
-  // Load any persisted queue from localStorage
-  if (config.enableLocalStorage && typeof localStorage !== "undefined") {
+  // Initialize online detection
+  initOnlineDetection();
+  
+  // Initialize storage and load any persisted queue
+  const storage = initStorage(isStorageEnabled());
+  if (isStorageEnabled()) {
     try {
-      const stored = localStorage.getItem(config.localStorageKey!);
+      const stored = storage.getItem(getStorageKey());
       if (stored) {
         const parsedQueue = JSON.parse(stored);
         batchQueue.push(...parsedQueue);
         if (config.debug) {
           console.log(
-            `[Olakai SDK] Loaded ${parsedQueue.length} items from localStorage`,
+            `[Olakai SDK] Loaded ${parsedQueue.length} items from storage`,
           );
         }
       }
     } catch (err) {
       if (config.debug) {
-        console.warn("[Olakai SDK] Failed to load from localStorage:", err);
+        console.warn("[Olakai SDK] Failed to load from storage:", err);
       }
     }
   }
@@ -105,16 +136,18 @@ export function getConfig(): SDKConfig {
 }
 
 /**
- * Persist the queue to localStorage
+ * Persist the queue to storage
  */
 function persistQueue() {
-  if (!config.enableLocalStorage || typeof localStorage === "undefined") return;
+  if (!isStorageEnabled()) return;
 
   try {
+    const storage = getStorage();
     const serialized = JSON.stringify(batchQueue);
-    if (serialized.length > config.maxLocalStorageSize!) {
+    const maxSize = getMaxStorageSize();
+    if (serialized.length > maxSize) {
       // Remove oldest items if queue is too large
-      const targetSize = Math.floor(config.maxLocalStorageSize! * 0.8);
+      const targetSize = Math.floor(maxSize * 0.8);
       while (
         JSON.stringify(batchQueue).length > targetSize &&
         batchQueue.length > 0
@@ -122,9 +155,9 @@ function persistQueue() {
         batchQueue.shift();
       }
     }
-    localStorage.setItem(config.localStorageKey!, JSON.stringify(batchQueue));
+    storage.setItem(getStorageKey(), JSON.stringify(batchQueue));
     if (config.verbose) {
-      console.log("[Olakai SDK] Persisted queue to localStorage");
+      console.log("[Olakai SDK] Persisted queue to storage");
     }
   } catch (err) {
     if (config.debug) {
@@ -375,10 +408,11 @@ export function getQueueSize(): number {
 
 export function clearQueue(): void {
   batchQueue = [];
-  if (config.enableLocalStorage && typeof localStorage !== "undefined") {
-    localStorage.removeItem(config.localStorageKey!);
+  if (isStorageEnabled()) {
+    const storage = getStorage();
+    storage.removeItem(getStorageKey());
     if (config.verbose) {
-      console.log("[Olakai SDK] Cleared queue from localStorage");
+      console.log("[Olakai SDK] Cleared queue from storage");
     }
   }
 }

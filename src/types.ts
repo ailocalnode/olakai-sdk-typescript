@@ -66,9 +66,12 @@ export type SDKConfig = {
   batchTimeout?: number;
   retries?: number;
   timeout?: number;
-  enableLocalStorage?: boolean;
-  localStorageKey?: string;
-  maxLocalStorageSize?: number;
+  enableLocalStorage?: boolean; // Legacy name, now applies to all storage types
+  localStorageKey?: string; // Legacy name, now applies to all storage types  
+  maxLocalStorageSize?: number; // Legacy name, now applies to all storage types
+  enableStorage?: boolean; // New generic name for storage enabling
+  storageKey?: string; // New generic name for storage key
+  maxStorageSize?: number; // New generic name for max storage size
   debug: boolean;
   onError?: (error: Error) => void;
   sanitizePatterns?: RegExp[];
