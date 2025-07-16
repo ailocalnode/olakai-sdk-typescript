@@ -64,6 +64,7 @@ export async function initClient(
   configBuilder.version(options.version || packageJson.version);
   configBuilder.debug(options.debug || false);
   configBuilder.verbose(options.verbose || false);
+  configBuilder.storageType(options.storageType || 'auto');
   config = configBuilder.build();
   
   // Validate required configuration
