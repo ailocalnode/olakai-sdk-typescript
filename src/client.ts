@@ -64,10 +64,10 @@ export async function initClient(
   const { apiKey, domainUrl, ...restConfig } = options;
   
   // Apply configuration in order of precedence
-  if (apiKey) {
+  if (apiKey !== undefined) {
     config.apiKey = apiKey;
   }
-  if (domainUrl) {
+  if (domainUrl !== undefined) {
     config.domainUrl = `${domainUrl}/api/monitoring/prompt`;
   }
   
@@ -75,11 +75,13 @@ export async function initClient(
   if (Object.keys(restConfig).length > 0) {
     config = { ...config, ...restConfig };
   }
-  if (!config.domainUrl) {
-    throw new Error("[Olakai SDK] API URL is not set");
+  
+  // Validate required configuration
+  if (!config.domainUrl || config.domainUrl === "/api/monitoring/prompt") {
+    throw new Error("[Olakai SDK] API URL is not set. Please provide a valid domainUrl in the configuration.");
   }
-  if (!config.apiKey) {
-    throw new Error("[Olakai SDK] API key is not set");
+  if (!config.apiKey || config.apiKey.trim() === "") {
+    throw new Error("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
   }
   if (config.verbose) {
     console.log("[Olakai SDK] Config:", config);
