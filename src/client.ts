@@ -49,7 +49,7 @@ export async function initClient(
   // Extract known parameters
   const configBuilder = new ConfigBuilder();
   configBuilder.apiKey(apiKey);
-  configBuilder.domainUrl(domainUrl);
+  configBuilder.domainUrl(`${domainUrl}/api/monitoring/prompt`);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
   configBuilder.retries(options.retries || 3);

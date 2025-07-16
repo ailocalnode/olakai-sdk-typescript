@@ -211,7 +211,7 @@ export class ConfigBuilder {
 
     return {
       apiKey: "",
-      apiUrl: "https://your-api.com/log",
+      domainUrl: "",
       batchSize: 10,
       batchTimeout: 5000,
       retries: 3,
