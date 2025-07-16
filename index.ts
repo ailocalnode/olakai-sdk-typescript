@@ -18,7 +18,7 @@ export {
   createCircuitBreakerMiddleware,
   createTransformMiddleware,
   createTimeoutMiddleware,
-} from "./src/middleware";
+} from "./src/middleware/index";
 
 // Re-export utilities
 export {
