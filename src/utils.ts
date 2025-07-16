@@ -21,7 +21,7 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     errors.push("API key is required");
   }
 
-  if (config.apiUrl && !isValidUrl(config.apiUrl)) {
+  if (config.domainUrl && !isValidUrl(config.domainUrl)) {
     errors.push("API URL must be a valid URL");
   }
 
@@ -63,7 +63,7 @@ export function validateMonitorOptions<TArgs extends any[], TResult>(
 ): string[] {
   const errors: string[] = [];
 
-  if (!options.name || options.name.trim() === "") {
+  if (!options.task || options.task.trim() === "") {
     errors.push("Monitor name is required");
   }
 
@@ -138,8 +138,8 @@ export class ConfigBuilder {
     return this;
   }
 
-  apiUrl(url: string): ConfigBuilder {
-    this.config.apiUrl = url;
+  domainUrl(url: string): ConfigBuilder {
+    this.config.domainUrl = url;
     return this;
   }
 
@@ -195,6 +195,11 @@ export class ConfigBuilder {
 
   sanitizePatterns(patterns: RegExp[]): ConfigBuilder {
     this.config.sanitizePatterns = patterns;
+    return this;
+  }
+
+  verbose(enable: boolean = true): ConfigBuilder {
+    this.config.verbose = enable;
     return this;
   }
 

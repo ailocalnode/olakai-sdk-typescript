@@ -8,25 +8,11 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies } from "./queue";
 import packageJson from "../package.json";
+import { ConfigBuilder } from "./utils";
+
 const isBatchingEnabled = false;
 
-let config: SDKConfig = {
-  apiKey: "",
-  domainUrl: "",
-  batchSize: 10,
-  batchTimeout: 5000, // 5 seconds
-  retries: 3,
-  timeout: 20000, // 20 seconds
-  enableStorage: true, // Whether to enable storage at all
-  storageType: 'auto', // Auto-detect best storage type
-  storageKey: "olakai-sdk-queue", // Storage key/identifier
-  maxStorageSize: 1000000, // Maximum storage size (1MB)
-  onError: (_error: Error) => {},
-  sanitizePatterns: [],
-  version: packageJson.version,
-  debug: false,
-  verbose: false,
-};
+let config: SDKConfig;
 
 let isOnline = true; // Default to online for server environments
 
@@ -62,19 +48,22 @@ export async function initClient(
 ) {
   // Extract known parameters
   const { apiKey, domainUrl, ...restConfig } = options;
-  
-  // Apply configuration in order of precedence
-  if (apiKey !== undefined) {
-    config.apiKey = apiKey;
-  }
-  if (domainUrl !== undefined) {
-    config.domainUrl = `${domainUrl}/api/monitoring/prompt`;
-  }
-  
-  // Apply any additional config properties
-  if (Object.keys(restConfig).length > 0) {
-    config = { ...config, ...restConfig };
-  }
+  const configBuilder = new ConfigBuilder();
+  configBuilder.apiKey(options.apiKey || "");
+  configBuilder.domainUrl(`${options.domainUrl}/api/monitoring/prompt` || "");
+  configBuilder.batchSize(options.batchSize || 10);
+  configBuilder.batchTimeout(options.batchTimeout || 5000);
+  configBuilder.retries(options.retries || 3);
+  configBuilder.timeout(options.timeout || 20000);
+  configBuilder.enableStorage(options.enableStorage || true);
+  configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
+  configBuilder.maxStorageSize(options.maxStorageSize || 1000000);
+  configBuilder.onError(options.onError || (() => {}));
+  configBuilder.sanitizePatterns(options.sanitizePatterns || []);
+  configBuilder.version(options.version || packageJson.version);
+  configBuilder.debug(options.debug || false);
+  configBuilder.verbose(options.verbose || false);
+  config = configBuilder.build();
   
   // Validate required configuration
   if (!config.domainUrl || config.domainUrl === "/api/monitoring/prompt") {
