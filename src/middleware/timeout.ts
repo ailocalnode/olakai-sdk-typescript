@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Timeout middleware
 export function createTimeoutMiddleware<TArgs extends any[], TResult>(

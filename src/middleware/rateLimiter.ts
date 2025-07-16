@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Rate limiting middleware
 export function createRateLimitMiddleware<

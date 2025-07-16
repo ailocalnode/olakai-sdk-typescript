@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 import { createLoggingMiddleware } from "./logging";
 import { createRateLimitMiddleware } from "./rateLimiter";
 import { createValidationMiddleware } from "./timeout";

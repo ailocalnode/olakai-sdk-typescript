@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Caching middleware
 export function createCachingMiddleware<TArgs extends any[], TResult>(options: {

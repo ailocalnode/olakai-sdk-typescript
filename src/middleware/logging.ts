@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Logging middleware
 export function createLoggingMiddleware<TArgs extends any[], TResult>(options: {

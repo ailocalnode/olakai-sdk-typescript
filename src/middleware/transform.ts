@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Data transformation middleware
 export function createTransformMiddleware<

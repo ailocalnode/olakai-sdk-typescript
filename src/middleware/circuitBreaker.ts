@@ -1,4 +1,4 @@
-import { Middleware } from "../types";
+import { Middleware } from "./index";
 
 // Circuit breaker middleware
 export function createCircuitBreakerMiddleware<
