@@ -1,6 +1,7 @@
 export type MonitorPayload = {
   userId?: string;
   chatId?: string;
+  shouldScore?: boolean;
   task?: string;
   subTask?: string;
   prompt: string;
@@ -31,6 +32,7 @@ export type ControlOptions<TArgs extends any[]> = {
 export type MonitorOptions<TArgs extends any[], TResult> = {
   task?: string;
   subTask?: string;
+  shouldScore?: boolean;
   capture: (ctx: { args: TArgs; result: TResult }) => {
     input: any;
     output: any;

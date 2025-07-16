@@ -93,7 +93,12 @@ export function createStorageAdapter(
 
     case 'file':
       if (isNodeJS()) {
-        return new FileStorageAdapter(cacheDirectory);
+        try {
+          return new FileStorageAdapter(cacheDirectory);
+        } catch (err) {
+          console.warn('[Olakai SDK] File storage not available, falling back to memory storage');
+          return new MemoryStorageAdapter();
+        }
       } else {
         console.warn('[Olakai SDK] File storage not available in browser, falling back to localStorage');
         return new LocalStorageAdapter();

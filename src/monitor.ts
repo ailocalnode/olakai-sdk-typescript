@@ -423,6 +423,7 @@ export function monitor<TArgs extends any[], TResult>(
               requestTime: Number(Date.now() - start),
               ...(options.task !== undefined ? { task: options.task } : {}),
               ...(options.subTask !== undefined ? { subTask: options.subTask } : {}),
+              ...(options.shouldScore !== undefined ? { shouldScore: options.shouldScore } : {}),
             };
 
             if (config.verbose) {

@@ -29,7 +29,7 @@ export class FileStorageAdapter implements StorageAdapter {
         this.ensureCacheDir();
       } else {
         this.cacheDir = '';
-        console.warn('[Olakai SDK] Node.js file system modules not available, file storage disabled');
+        throw new Error('[Olakai SDK] Node.js file system modules not available, file storage disabled');
       }
     }
   
