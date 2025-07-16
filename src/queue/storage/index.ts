@@ -101,7 +101,12 @@ export function createStorageAdapter(
         }
       } else {
         console.warn('[Olakai SDK] File storage not available in browser, falling back to localStorage');
-        return new LocalStorageAdapter();
+        if (isBrowser()) {
+          return new LocalStorageAdapter();
+        } else {
+          console.warn('[Olakai SDK] LocalStorage not available, falling back to memory storage');
+          return new MemoryStorageAdapter();
+        }
       }
 
     case 'memory':
