@@ -73,7 +73,7 @@ export type SDKConfig = {
   retries: number;
   timeout: number;
   enableStorage: boolean; // Whether to enable storage at all
-  storageType: 'memory' | 'file' | 'auto'; // Type of storage to use
+  storageType: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled'; // Type of storage to use
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  

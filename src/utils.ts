@@ -194,6 +194,11 @@ export class ConfigBuilder {
     return this;
   }
 
+  storageType(type: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled' = 'auto'): ConfigBuilder {
+    this.config.storageType = type;
+    return this;
+  }
+
   sanitizePatterns(patterns: RegExp[]): ConfigBuilder {
     this.config.sanitizePatterns = patterns;
     return this;
