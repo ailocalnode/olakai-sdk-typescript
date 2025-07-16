@@ -21,7 +21,7 @@ async function demonstrateModularQueueSystem() {
 
   // 2. Create a monitored function
   const calculateSum = monitor({
-    name: 'calculateSum',
+    task: 'calculateSum',
     capture: ({ args, result }) => ({
       input: { numbers: args[0] },
       output: { sum: result },
