@@ -66,9 +66,11 @@ export type SDKConfig = {
   batchTimeout: number;
   retries: number;
   timeout: number;
-  enableStorage: boolean; // New generic name for storage enabling
-  storageKey: string; // New generic name for storage key
-  maxStorageSize: number; // New generic name for max storage size  
+  enableStorage: boolean; // Whether to enable storage at all
+  storageType: 'memory' | 'file' | 'auto'; // Type of storage to use
+  storageKey: string; // Storage key/identifier
+  maxStorageSize: number; // Maximum storage size in bytes
+  cacheDirectory?: string; // Custom cache directory for file storage (optional)  
   onError: (error: Error) => void;
   sanitizePatterns: RegExp[];
   debug: boolean;

@@ -17,6 +17,7 @@ A powerful TypeScript SDK for comprehensive function monitoring, intelligent exe
 🔧 **Powerful Middleware** - Extensible middleware system with built-in components  
 🔒 **Data Security** - Advanced sanitization and privacy protection  
 📊 **Real-time Analytics** - Comprehensive metrics and observability  
+💾 **Hybrid Storage** - Auto-adapting storage (memory/file/browser) for any environment  
 ⚡ **High Performance** - Optimized for production workloads  
 🌐 **Framework Agnostic** - Works with any TypeScript/JavaScript application
 

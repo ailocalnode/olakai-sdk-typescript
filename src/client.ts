@@ -18,9 +18,10 @@ let config: SDKConfig = {
   batchTimeout: 5000, // 5 seconds
   retries: 3,
   timeout: 20000, // 20 seconds
-  enableStorage: true, // New generic storage enabling
-  storageKey: "olakai-sdk-queue", // New generic storage key
-  maxStorageSize: 1000000, // New generic max storage size (1MB)
+  enableStorage: true, // Whether to enable storage at all
+  storageType: 'auto', // Auto-detect best storage type
+  storageKey: "olakai-sdk-queue", // Storage key/identifier
+  maxStorageSize: 1000000, // Maximum storage size (1MB)
   onError: (_error: Error) => {},
   sanitizePatterns: [],
   version: packageJson.version,
@@ -105,7 +106,8 @@ export function initClient(
   initOnlineDetection();
   
   // Initialize storage and load any persisted queue
-  const storage = initStorage(isStorageEnabled());
+  const storageType = isStorageEnabled() ? config.storageType : 'disabled';
+  const storage = initStorage(storageType, config.cacheDirectory);
   if (isStorageEnabled()) {
     try {
       const stored = storage.getItem(getStorageKey());
