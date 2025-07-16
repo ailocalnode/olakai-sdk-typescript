@@ -8,7 +8,7 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies } from "./queue";
 import packageJson from "../package.json";
-import { ConfigBuilder } from "./utils";
+import { ConfigBuilder, sleep } from "./utils";
 
 const isBatchingEnabled = false;
 
@@ -39,7 +39,9 @@ function initOnlineDetection() {
 
 /**
  * Initialize the SDK
- * @param keyOrConfig - The API key or configuration object
+ * @param apiKey - The API key
+ * @param domainUrl - The domain URL
+ * @param options - The extra options for the SDKConfig
  */
 export async function initClient(
   apiKey: string,
@@ -98,18 +100,6 @@ export async function initClient(
  */
 export function getConfig(): SDKConfig {
   return { ...config };
-}
-
-/**
- * Sleep for a given number of milliseconds
- * @param ms - The number of milliseconds to sleep
- * @returns A promise that resolves after the given number of milliseconds
- */
-async function sleep(ms: number): Promise<void> {
-  if (config.verbose) {
-    console.log("[Olakai SDK] Sleeping for", ms, "ms");
-  }
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -186,7 +176,7 @@ async function sendWithRetry(
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
         const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-        await sleep(delay);
+        await sleep(config, delay);
       }
     }
   }
@@ -334,7 +324,7 @@ export async function sendToControlAPI(
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
         const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-        await sleep(delay);
+        await sleep(config, delay);
       }
     }
   }

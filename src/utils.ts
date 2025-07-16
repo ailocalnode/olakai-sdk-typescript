@@ -1,3 +1,4 @@
+import { config } from "process";
 import type { SDKConfig, MonitorOptions } from "./types";
 
 // Common patterns for sanitizing sensitive data
@@ -255,4 +256,16 @@ export function isBrowser(): boolean {
 
 export function isNodeJS(): boolean {
   return typeof process !== 'undefined' && process.versions && process.versions.node !== 'false';
+}
+
+/**
+ * Sleep for a given number of milliseconds
+ * @param ms - The number of milliseconds to sleep
+ * @returns A promise that resolves after the given number of milliseconds
+ */
+export async function sleep(config: SDKConfig, ms: number): Promise<void> {
+  if (config.verbose) {
+    console.log("[Olakai SDK] Sleeping for", ms, "ms");
+  }
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
