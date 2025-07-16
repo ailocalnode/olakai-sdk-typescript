@@ -421,6 +421,8 @@ export function monitor<TArgs extends any[], TResult>(
               userId: toApiString(userId),
               tokens: 0,
               requestTime: Number(Date.now() - start),
+              ...(options.task !== undefined ? { task: options.task } : {}),
+              ...(options.subTask !== undefined ? { subTask: options.subTask } : {}),
             };
 
             if (config.verbose) {

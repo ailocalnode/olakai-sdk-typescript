@@ -1,6 +1,8 @@
 export type MonitorPayload = {
   userId?: string;
   chatId?: string;
+  task?: string;
+  subTask?: string;
   prompt: string;
   response: string;
   tokens?: number;
@@ -27,7 +29,8 @@ export type ControlOptions<TArgs extends any[]> = {
  * Configuration for each monitored function
  */
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  name: string;
+  task?: string;
+  subTask?: string;
   capture: (ctx: { args: TArgs; result: TResult }) => {
     input: any;
     output: any;
@@ -44,15 +47,16 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
   userId?: string | ((args: TArgs) => string);
+  sanitize?: boolean; // Whether to sanitize sensitive data
+  priority?: "low" | "normal" | "high"; // Priority for batching
+  control?: ControlOptions<TArgs>; // Control configuration
   // May be deprecated if not needed
   enabled?: boolean | ((args: TArgs) => boolean);
   sampleRate?: number; // 0-1, percentage of calls to monitor
   timeout?: number; // Timeout for the API call
   retries?: number; // Number of retries for failed API calls
   tags?: Record<string, string>; // Additional tags for filtering
-  sanitize?: boolean; // Whether to sanitize sensitive data
-  priority?: "low" | "normal" | "high"; // Priority for batching
-  control?: ControlOptions<TArgs>; // Control configuration
+
 };
 
 /**
