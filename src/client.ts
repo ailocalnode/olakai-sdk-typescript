@@ -24,6 +24,8 @@ let config: SDKConfig = {
   storageKey: "olakai-sdk-queue", // New generic storage key
   maxLocalStorageSize: 1000000, // Legacy - kept for backwards compatibility (1MB)
   maxStorageSize: 1000000, // New generic max storage size (1MB)
+  onError: (_error: Error) => {},
+  sanitizePatterns: [],
   version: packageJson.version,
   debug: false,
   verbose: false,
@@ -71,18 +73,26 @@ function initOnlineDetection() {
  * @param keyOrConfig - The API key or configuration object
  */
 export function initClient(
-  apiKey?: string,
-  domainUrl?: string,
-  sdkConfig?: SDKConfig,
+  options: Partial<SDKConfig & {
+    apiKey?: string;
+    domainUrl?: string;
+    [key: string]: any;
+  }> = {}
 ) {
+  // Extract known parameters
+  const { apiKey, domainUrl, ...restConfig } = options;
+  
+  // Apply configuration in order of precedence
   if (apiKey) {
     config.apiKey = apiKey;
   }
   if (domainUrl) {
     config.apiUrl = domainUrl;
   }
-  if (sdkConfig) {
-    config = { ...config, ...sdkConfig };
+  
+  // Apply any additional config properties
+  if (Object.keys(restConfig).length > 0) {
+    config = { ...config, ...restConfig };
   }
   if (!config.apiUrl) {
     throw new Error("[Olakai SDK] API URL is not set");
