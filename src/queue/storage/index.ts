@@ -1,9 +1,9 @@
-import { isBrowser, isNodeJS } from '../utils';
+import { isBrowser, isNodeJS } from '../../utils';
 import { LocalStorageAdapter } from './localStorage';
 import { MemoryStorageAdapter } from './memoryStorage';
 import { FileStorageAdapter } from './fileStorage';
 import { NoOpStorageAdapter } from './noOpStorage';
-import { SDKConfig } from '../types';
+import { SDKConfig } from '../../types';
 
 
 export interface StorageAdapter {

@@ -1,12 +1,12 @@
 import type {
   SDKConfig,
   MonitorPayload,
-  BatchRequest,
   APIResponse,
   ControlPayload,
   ControlResponse,
 } from "./types";
-import { initStorage, getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from "./storage/index";
+import { initStorage, isStorageEnabled } from "./queue/storage/index";
+import { initQueueManager, QueueDependencies } from "./queue";
 import packageJson from "../package.json";
 const subdomain = "staging.app";
 const isBatchingEnabled = false;
@@ -29,8 +29,6 @@ let config: SDKConfig = {
   verbose: false,
 };
 
-let batchQueue: BatchRequest[] = [];
-let batchTimer: NodeJS.Timeout | null = null;
 let isOnline = true; // Default to online for server environments
 
 
@@ -42,7 +40,7 @@ function initOnlineDetection() {
     
     window.addEventListener("online", () => {
       isOnline = true;
-      processBatchQueue();
+      // Queue manager will handle processing when online
     });
     window.addEventListener("offline", () => {
       isOnline = false;
@@ -58,7 +56,7 @@ function initOnlineDetection() {
  * Initialize the SDK
  * @param keyOrConfig - The API key or configuration object
  */
-export function initClient(
+export async function initClient(
   options: Partial<SDKConfig & {
     apiKey?: string;
     domainUrl?: string;
@@ -93,35 +91,19 @@ export function initClient(
   // Initialize online detection
   initOnlineDetection();
   
-  // Initialize storage and load any persisted queue
+  // Initialize storage
   const storageType = isStorageEnabled(config) ? config.storageType : 'disabled';
-  const storage = initStorage(storageType, config.cacheDirectory);
-  if (isStorageEnabled(config)) {
-    try {
-      const stored = storage.getItem(getStorageKey(config));
-      if (stored) {
-        const parsedQueue = JSON.parse(stored);
-        batchQueue.push(...parsedQueue);
-        if (config.debug) {
-          console.log(
-            `[Olakai SDK] Loaded ${parsedQueue.length} items from storage`,
-          );
-        }
-      }
-    } catch (err) {
-      if (config.debug) {
-        console.warn("[Olakai SDK] Failed to load from storage:", err);
-      }
-    }
-  }
+  initStorage(storageType, config.cacheDirectory);
 
-  // Start processing queue if we have items and we're online
-  if (batchQueue.length > 0 && isOnline) {
-    if (config.verbose) {
-      console.log("[Olakai SDK] Starting batch processing");
-    }
-    processBatchQueue();
-  }
+  // Initialize queue manager with dependencies
+  const queueDependencies: QueueDependencies = {
+    config,
+    isOnline: () => isOnline,
+    sendWithRetry: sendWithRetry
+  };
+
+  const queueManager = initQueueManager(queueDependencies);
+  await queueManager.initialize();
 }
 
 /**
@@ -130,37 +112,6 @@ export function initClient(
  */
 export function getConfig(): SDKConfig {
   return { ...config };
-}
-
-/**
- * Persist the queue to storage
- */
-function persistQueue() {
-  if (!isStorageEnabled(config)) return;
-
-  try {
-    const storage = getStorage();
-    const serialized = JSON.stringify(batchQueue);
-    const maxSize = getMaxStorageSize(config);
-    if (serialized.length > maxSize) {
-      // Remove oldest items if queue is too large
-      const targetSize = Math.floor(maxSize * 0.8);
-      while (
-        JSON.stringify(batchQueue).length > targetSize &&
-        batchQueue.length > 0
-      ) {
-        batchQueue.shift();
-      }
-    }
-    storage.setItem(getStorageKey(config), JSON.stringify(batchQueue));
-    if (config.verbose) {
-      console.log("[Olakai SDK] Persisted queue to storage");
-    }
-  } catch (err) {
-    if (config.debug) {
-      console.warn("[Olakai SDK] Failed to persist queue:", err);
-    }
-  }
 }
 
 /**
@@ -266,91 +217,6 @@ async function sendWithRetry(
 }
 
 /**
- * Schedule the batch processing
- */
-function scheduleBatchProcessing() {
-  if (batchTimer) return;
-
-  batchTimer = setTimeout(() => {
-    processBatchQueue();
-  }, config.batchTimeout);
-}
-
-/**
- * The core batching logic
- * Sorts requests by priority (high → normal → low)
- * Groups requests into batches of configurable size
- * Sends batches to the API with retry logic
- * Removes successfully sent items from the queue
- * Schedules the next batch processing
- */
-async function processBatchQueue() {
-  if (batchTimer) {
-    clearTimeout(batchTimer);
-    batchTimer = null;
-  }
-
-  if (batchQueue.length === 0 || !isOnline) {
-    return;
-  }
-
-  // Sort by priority: high, normal, low
-  batchQueue.sort((a, b) => {
-    const priorityOrder = { high: 0, normal: 1, low: 2 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
-  });
-
-  // Process batches
-  const batches: BatchRequest[][] = [];
-  for (let i = 0; i < batchQueue.length; i += config.batchSize!) {
-    batches.push(batchQueue.slice(i, i + config.batchSize!));
-  }
-
-  const successfulBatches: Set<number> = new Set();
-
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    const payloads = batch.map((item) => item.payload);
-
-    try {
-      const success = await sendWithRetry(payloads);
-      if (success) {
-        successfulBatches.add(batchIndex);
-        if (config.verbose) {
-          console.log(
-            `[Olakai SDK] Successfully sent batch of ${batch.length} items`,
-          );
-        }
-      }
-    } catch (err) {
-      if (config.debug) {
-        console.error(`[Olakai SDK] Batch ${batchIndex} failed:`, err);
-      }
-    }
-  }
-
-  // Remove successfully sent items from queue
-  let removeCount = 0;
-  for (let i = 0; i < batches.length; i++) {
-    if (successfulBatches.has(i)) {
-      removeCount += batches[i].length;
-    } else {
-      break; // Stop at first failed batch to maintain order
-    }
-  }
-
-  if (removeCount > 0) {
-    batchQueue.splice(0, removeCount);
-    persistQueue();
-  }
-
-  // Schedule next processing if there are still items
-  if (batchQueue.length > 0) {
-    scheduleBatchProcessing();
-  }
-}
-
-/**
  * Send a payload to the API
  * Adds the payload to the queue and processes it
  * Persists queue to localStorage (for offline support)
@@ -376,50 +242,15 @@ export async function sendToAPI(
   }
 
   if (isBatchingEnabled) {
-    const batchItem: BatchRequest = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      payload,
-      timestamp: Date.now(),
-      retries: 0,
-      priority: options.priority || "normal",
-    };
-
-    batchQueue.push(batchItem);
-    persistQueue();
-
-    // If queue is full or we're in immediate mode, process immediately
-    if (batchQueue.length >= config.batchSize! || options.priority === "high") {
-      await processBatchQueue();
-    } else {
-      scheduleBatchProcessing();
-    }
+    const { addToQueue } = await import('./queue');
+    await addToQueue(payload, options);
   } else {
     await makeAPICall(payload);
   }
 }
 
-// Utility functions for management
-export function getQueueSize(): number {
-  return batchQueue.length;
-}
+// Re-export queue utility functions
 
-export function clearQueue(): void {
-  batchQueue = [];
-  if (isStorageEnabled(config)) {
-    const storage = getStorage();
-    storage.removeItem(getStorageKey(config));
-    if (config.verbose) {
-      console.log("[Olakai SDK] Cleared queue from storage");
-    }
-  }
-}
-
-export async function flushQueue(): Promise<void> {
-  if (config.verbose) {
-    console.log("[Olakai SDK] Flushing queue");
-  }
-  await processBatchQueue();
-}
 
 /**
  * Make a control API call to check if execution should be allowed
