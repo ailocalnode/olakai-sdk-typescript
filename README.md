@@ -2,7 +2,7 @@
 
 A TypeScript SDK for monitoring function calls and controlling execution with real-time API decisions.
 
-[![npm version](https://badge.fury.io/js/@olakai/api-sdk.svg)](https://badge.fury.io/js/@olakai/api-sdk)
+[![npm version](https://badge.fury.io/js/olakai-sdk.svg)](https://badge.fury.io/js/olakai-sdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
