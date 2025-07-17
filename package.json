@@ -1,12 +1,18 @@
 {
-  "name": "ts-sdk",
+  "name": "olakai-sdk",
   "version": "1.0.0",
   "description": "This document demonstrates how to use the Olakai SDK with all its features.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["olakai", "sdk", "typescript", "monitoring", "governance"],
+  "keywords": [
+    "olakai",
+    "sdk",
+    "typescript",
+    "monitoring",
+    "governance"
+  ],
   "author": "Olakai Corporation",
   "license": "MIT",
   "dependencies": {
@@ -15,5 +21,13 @@
   "devDependencies": {
     "@types/node": "^24.0.13",
     "typescript": "^5.8.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ailocalnode/olakai-sdk-typescript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ailocalnode/olakai-sdk-typescript/issues"
+  },
+  "homepage": "https://github.com/ailocalnode/olakai-sdk-typescript#readme"
 }
