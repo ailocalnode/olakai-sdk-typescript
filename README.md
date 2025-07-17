@@ -97,9 +97,7 @@ const response = await generateResponse("Explain quantum computing");
 </details>
 
 <details>
-<summary><strong>Another Example: Monitoring an OpenAI Chat Completion (Click to expand)</strong></summary>
-
-**Alternative: Monitor just the API call:**
+<summary><strong>Alternative: Monitor just the API call</strong></summary>
 
 ```typescript
 import OpenAI from "openai";
