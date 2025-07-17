@@ -101,23 +101,3 @@ export function quickMonitor<T extends (...args: any[]) => any>(
 ): T {
   return simpleMonitor(fn);
 }
-
-/**
- * Monitor with user tracking made easy
- */
-export function userMonitor<T extends (...args: any[]) => any>(
-  fn: T,
-  options: {
-    task?: string,
-    subTask?: string,
-    getUserId: (args: Parameters<T>) => string,
-    getChatId?: (args: Parameters<T>) => string,
-  }
-): T {
-  return simpleMonitor(fn, {
-    task: options.task || "",
-    subTask: options.subTask || "",
-    userId: options.getUserId,
-    chatId: options.getChatId,
-  });
-}

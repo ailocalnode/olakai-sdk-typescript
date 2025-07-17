@@ -8,7 +8,6 @@ export {
 export {
   simpleMonitor,
   quickMonitor,
-  userMonitor,
   capture,
 } from "./src/helpers";
 export * from "./src/types";

@@ -83,23 +83,26 @@ await processOrder("order-123");
 ### Track Users (For Multi-User Apps)
 
 ```typescript
-import { userMonitor } from "@olakai/api-sdk";
+import { simpleMonitor } from "@olakai/api-sdk";
 
-const loginUser = userMonitor(
-  async (email: string, password: string) => {
-    // Your login logic
-    return { success: true, userId: "user-123" };
+// Works with any function
+const processOrder = simpleMonitor(
+  async (orderId: string) => {
+    // Your business logic
+    return { success: true, orderId };
   },
   {
-    task: "user-login",
-    getUserId: (args) => args[0], // first argument is email
+    task: "Customer service", // Optional: give it a task
+    subtask: "process-order", // Optional: give it a subtask
+    getUserId: "example@olakai.ai" | ((args) => string) //Optional: You can pass a string or a function that will fetch the userId!
+    getChatId: "123" | ((args) => string) //Optional: You can pass a string or a function that will fetch the chatId!
   }
 );
 
-await loginUser("user@example.com", "password");
+await processOrder("order-123");
 ```
 
----
+## **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
 
 ## Common Patterns
 
