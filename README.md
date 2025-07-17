@@ -9,7 +9,7 @@ A TypeScript SDK for monitoring function calls and controlling execution with re
 ## Installation
 
 ```bash
-npm install @olakai/api-sdk
+npm install olakai-sdk
 ```
 
 ## Quick Start - The Easy & Fast Way
