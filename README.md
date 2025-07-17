@@ -34,6 +34,69 @@ console.log(result); // "Hello, World!"
 
 **What it does?** All inputs and outputs of the function are being sent to the API!
 
+<details>
+<summary><strong>🤖 Real Example: OpenAI API Call (Click to expand)</strong></summary>
+
+See how easy it is to add monitoring to an existing OpenAI API call:
+
+**Before (without monitoring):**
+
+```typescript
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+async function generateResponse(prompt: string) {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return completion.choices[0].message.content;
+}
+
+// Usage
+const response = await generateResponse("Explain quantum computing");
+```
+
+**After (with monitoring):**
+
+```typescript
+import OpenAI from "openai";
+import { initClient, quickMonitor } from "@olakai/api-sdk";
+
+// Initialize Olakai SDK
+initClient("your-olakai-api-key", "https://your-domain.com");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Just wrap your function - that's the only change!
+const generateResponse = quickMonitor(async (prompt: string) => {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return completion.choices[0].message.content;
+});
+
+// Usage (exactly the same)
+const response = await generateResponse("Explain quantum computing");
+```
+
+**What you get:**
+
+- ✅ Every prompt and response is automatically logged to Olakai
+- ✅ Token usage and response times are tracked
+- ✅ No changes to your existing code logic
+- ✅ If monitoring fails, your function still works perfectly
+
+</details>
+
 ---
 
 ## 🚀 **Why Use Olakai SDK?**
@@ -154,31 +217,37 @@ const robustFunction = simpleMonitor(
 
 ### Advanced Monitoring
 
-Sometimes you need fine-grained control. The original `advancedMonitor` function is still available:
+Sometimes you need fine-grained control. The `advancedMonitor` function gives you full access to all monitoring options:
 
 ```typescript
-import { monitor } from "@olakai/api-sdk";
+import { advancedMonitor } from "@olakai/api-sdk";
 
-const advancedMonitor = advancedMonitor({
-  capture: ({ args, result }) => ({
-    input: {
-      email: args[0],
-      requestTime: Date.now(),
-    },
-    output: {
-      success: result.success,
-      userId: result.userId,
-    },
-  }),
-  userId: (args) => args[0], // dynamic user ID
-  chatId: (args) => args[1], // session tracking
-  sanitize: true, // remove sensitive data
-  priority: "high", // queue priority
-});
+const loginUser = advancedMonitor(
+  async (email: string, sessionId: string) => {
+    // Your login logic
+    return { success: true, userId: "123" };
+  },
+  {
+    capture: ({ args, result }) => ({
+      input: {
+        email: args[0],
+        requestTime: Date.now(),
+      },
+      output: {
+        success: result.success,
+        userId: result.userId,
+      },
+    }),
+    userId: (args) => args[0], // dynamic user ID
+    chatId: (args) => args[1], // session tracking
+    sanitize: true, // remove sensitive data
+    priority: "high", // queue priority
+    task: "Authentication",
+    subTask: "user-login",
+  }
+);
 
-const loginUser = advancedMonitor(async (email: string, sessionId: string) => {
-  return { success: true, userId: "123" };
-});
+await loginUser("user@example.com", "session-123");
 ```
 
 ### Execution Control
@@ -186,19 +255,27 @@ const loginUser = advancedMonitor(async (email: string, sessionId: string) => {
 Block function execution based on real-time API decisions:
 
 ```typescript
-const controlledFunction = advancedMonitor({
-  capture: ({ args, result }) => ({
-    input: { action: args[0] },
-    output: result,
-  }),
-  control: {
-    enabled: true,
-    captureInput: (args) => ({ action: args[0] }),
-    onBlocked: (args, response) => {
-      throw new Error(`Access denied: ${response.reason}`);
-    },
+const controlledFunction = advancedMonitor(
+  async (action: string) => {
+    // This only runs if the control API allows it
+    return { success: true, action };
   },
-});
+  {
+    capture: ({ args, result }) => ({
+      input: { action: args[0] },
+      output: result,
+    }),
+    control: {
+      enabled: true,
+      captureInput: (args) => ({ action: args[0] }),
+      onBlocked: (args, response) => {
+        throw new Error(`Access denied: ${response.reason}`);
+      },
+    },
+  }
+);
+
+await controlledFunction("sensitive-operation");
 ```
 
 ### Middleware System
