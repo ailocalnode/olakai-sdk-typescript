@@ -15,13 +15,13 @@ npm install olakai-sdk
 ## Quick Start - The Easy & Fast Way
 
 ```typescript
-import { initClient, simpleMonitor } from olakai-sdk;
+import { initClient, olakaiMonitor } from olakai-sdk;
 
 // 1. Initialize once
 initClient("your-olakai-api-key", "https://your-olakai-domain.com");
 
 // 2. Wrap any function - that's it!
-const sayHello = simpleMonitor(async (name: string) => {
+const sayHello = olakaiMonitor(async (name: string) => {
   return `Hello, ${name}!`;
 });
 
@@ -67,7 +67,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, simpleMonitor } from "olakai-sdk";
+import { initClient, olakaiMonitor } from "olakai-sdk";
 
 // Initialize Olakai SDK
 initClient("your-olakai-api-key", "https://your-domain.com");
@@ -77,7 +77,7 @@ const openai = new OpenAI({
 });
 
 // Just wrap your function - that's the only change!
-const generateResponse = simpleMonitor(async (prompt: string) => {
+const generateResponse = olakaiMonitor(async (prompt: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -103,7 +103,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, simpleMonitor } from "olakai-sdk";
+import { initClient, olakaiMonitor } from "olakai-sdk";
 
 initClient("your-olakai-api-key", "https://your-domain.com");
 
@@ -112,7 +112,7 @@ const openai = new OpenAI({
 });
 
 // Create a monitored version of the API call
-const monitoredCompletion = simpleMonitor(async (messages: any[]) => {
+const monitoredCompletion = olakaiMonitor(async (messages: any[]) => {
   return await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages,
@@ -160,10 +160,10 @@ Built-in error handling, retries, and offline support
 ### Monitor Any Function
 
 ```typescript
-import { simpleMonitor } from "olakai-sdk";
+import { olakaiMonitor } from "olakai-sdk";
 
 // Works with any function
-const processOrder = simpleMonitor(
+const processOrder = olakaiMonitor(
   async (orderId: string) => {
     // Your business logic
     return { success: true, orderId };
@@ -182,10 +182,10 @@ await processOrder("order-123");
 ### Track Users (For Multi-User Apps)
 
 ```typescript
-import { simpleMonitor } from "olakai-sdk";
+import { olakaiMonitor } from "olakai-sdk";
 
 // Works with any function
-const processOrder = simpleMonitor(
+const processOrder = olakaiMonitor(
   async (orderId: string) => {
     // Your business logic
     return { success: true, orderId };
@@ -206,10 +206,10 @@ await processOrder("order-123");
 ### Obtain Scoring of the Prompt
 
 ```typescript
-import { simpleMonitor } from "olakai-sdk";
+import { olakaiMonitor } from "olakai-sdk";
 
 // Works with any function
-const processOrder = simpleMonitor(
+const processOrder = olakaiMonitor(
   async (orderId: string) => {
     // Your business logic
     return { success: true, orderId };
@@ -233,19 +233,19 @@ await processOrder("order-123");
 ### Capture Only What You Need
 
 ```typescript
-import { simpleMonitor, capture } from "olakai-sdk";
+import { olakaiMonitor, capture } from "olakai-sdk";
 
 // Capture everything (default)
-const monitorAll = simpleMonitor(myFunction, capture.all());
+const monitorAll = olakaiMonitor(myFunction, capture.all());
 
 // Capture only inputs
-const monitorInputs = simpleMonitor(myFunction, capture.input());
+const monitorInputs = olakaiMonitor(myFunction, capture.input());
 
 // Capture only outputs
-const monitorOutputs = simpleMonitor(myFunction, capture.output());
+const monitorOutputs = olakaiMonitor(myFunction, capture.output());
 
 // Custom capture
-const monitorCustom = simpleMonitor(
+const monitorCustom = olakaiMonitor(
   myFunction,
   capture.custom({
     input: (args) => ({ email: args[0] }),
@@ -257,7 +257,7 @@ const monitorCustom = simpleMonitor(
 ### Error Handling Made Easy
 
 ```typescript
-const robustFunction = simpleMonitor(
+const robustFunction = olakaiMonitor(
   async (data: any) => {
     // This might throw an error
     return await riskyOperation(data);
@@ -278,12 +278,12 @@ const robustFunction = simpleMonitor(
 
 ### Advanced Monitoring
 
-Sometimes you need fine-grained control. The `advancedMonitor` function gives you full access to all monitoring options:
+Sometimes you need fine-grained control. The ` olakaiAdvancedMonitor` function gives you full access to all monitoring options:
 
 ```typescript
-import { advancedMonitor } from "olakai-sdk";
+import { olakaiAdvancedMonitor } from "olakai-sdk";
 
-const testFunction = advancedMonitor(
+const testFunction =  olakaiAdvancedMonitor(
   async... ,
   options: MonitorOptions
 )
@@ -321,9 +321,9 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 </details>
 
 ```typescript
-import { advancedMonitor } from "olakai-sdk";
+import { olakaiAdvancedMonitor } from "olakai-sdk";
 
-const loginUser = advancedMonitor(
+const loginUser = olakaiAdvancedMonitor(
   async (email: string, sessionId: string) => {
     // Your login logic
     return { success: true, userId: "123" };
@@ -356,7 +356,7 @@ await loginUser("user@example.com", "session-123");
 Block function execution based on real-time API decisions:
 
 ```typescript
-const controlledFunction = advancedMonitor(
+const controlledFunction = olakaiAdvancedMonitor(
   async (action: string) => {
     // This only runs if the control API allows it
     return { success: true, action };
@@ -432,7 +432,7 @@ This will log detailed information about what the SDK is doing.
 
 ### ✅ **Do This**
 
-- Start with `simpleMonitor`
+- Start with `olakaiMonitor`
 - Use descriptive task names
 - Monitor important business logic functions
 - Set up user tracking for multi-user apps
@@ -458,7 +458,7 @@ This will log detailed information about what the SDK is doing.
 | Function                      | Description               | Use Case                      |
 | ----------------------------- | ------------------------- | ----------------------------- |
 | `quickMonitor(name, fn)`      | Simplest monitoring       | Quick setup, just need a name |
-| `simpleMonitor(fn, options?)` | Auto-capture with options | Most common use case          |
+| `olakaiMonitor(fn, options?)` | Auto-capture with options | Most common use case          |
 
 ### Helper Objects
 
