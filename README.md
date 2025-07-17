@@ -31,7 +31,8 @@ console.log(result); // "Hello, World!"
 ```
 
 **That's it!** Your function calls are now being monitored automatically. No complex configuration needed.
-**What is does?** All inputs and outputs of the function are being sent to the API!
+
+**What it does?** All inputs and outputs of the function are being sent to the API!
 
 ---
 
@@ -77,7 +78,7 @@ const processOrder = simpleMonitor(
 await processOrder("order-123");
 ```
 
-**What is does?** The difference here, is t
+**What it does?** The difference here, is that you can pass additionnal options, like subtask and task if you want your Olakai's calls to be specific! This helps for analytics generation!
 
 ### Track Users (For Multi-User Apps)
 
