@@ -34,6 +34,8 @@ console.log(result); // "Hello, World!"
 
 **What it does?** All inputs and outputs of the function are being sent to the API!
 
+**How?** The inputs will be displayed as the "prompt" and the return object as the "response". (in the UNO product)
+
 <details>
 <summary><strong>🤖 Real Example: OpenAI API Call (Click to expand)</strong></summary>
 
@@ -405,7 +407,7 @@ This will log detailed information about what the SDK is doing.
 
 ### ✅ **Do This**
 
-- Start with `quickMonitor` or `simpleMonitor`
+- Start with `simpleMonitor`
 - Use descriptive task names
 - Monitor important business logic functions
 - Set up user tracking for multi-user apps
