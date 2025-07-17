@@ -391,7 +391,10 @@ initClient("your-olakai-api-key", "https://your-domain.com");
 ### Debug Mode
 
 ```typescript
-initClient("key", "url", { debug: true, verbose: true });
+initClient("your-olakai-api-key", "https://your-domain.com", {
+  debug: true,
+  verbose: true,
+});
 ```
 
 This will log detailed information about what the SDK is doing.
