@@ -86,7 +86,7 @@ export const capture = {
  * Simple monitor function that automatically captures everything
  * No type parameters needed - TypeScript will infer them
  */
-export function simpleMonitor<T extends (...args: any[]) => any>(
+export function olakaiMonitor<T extends (...args: any[]) => any>(
   fn: T,
   options?: {
     userId?: string | ((args: Parameters<T>) => string),
@@ -108,7 +108,7 @@ export function simpleMonitor<T extends (...args: any[]) => any>(
 }
 
 
-export function advancedMonitor<T extends (...args: any[]) => any>(
+export function olakaiAdvancedMonitor<T extends (...args: any[]) => any>(
     fn: T,
     options: MonitorOptions<Parameters<T>, ReturnType<T>>
 ): T {
