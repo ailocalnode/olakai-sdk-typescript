@@ -94,6 +94,42 @@ const response = await generateResponse("Explain quantum computing");
 - ✅ Token usage and response times are tracked
 - ✅ No changes to your existing code logic
 - ✅ If monitoring fails, your function still works perfectly
+</details>
+
+<details>
+<summary><strong>🤖 Real Example: OpenAI API Call (Click to expand)</strong></summary>
+
+**Alternative: Monitor just the API call:**
+
+```typescript
+import OpenAI from "openai";
+import { initClient, quickMonitor } from "@olakai/api-sdk";
+
+initClient("your-olakai-api-key", "https://your-domain.com");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Create a monitored version of the API call
+const monitoredCompletion = quickMonitor(async (messages: any[]) => {
+  return await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages,
+  });
+});
+
+async function generateResponse(prompt: string) {
+  // Use the monitored API call
+  const completion = await monitoredCompletion([
+    { role: "user", content: prompt },
+  ]);
+
+  return completion.choices[0].message.content;
+}
+```
+
+_This approach lets you monitor specific API calls while keeping your business logic separate._
 
 </details>
 
