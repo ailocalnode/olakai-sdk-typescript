@@ -3,7 +3,7 @@ import { LocalStorageAdapter } from './localStorage';
 import { MemoryStorageAdapter } from './memoryStorage';
 import { FileStorageAdapter } from './fileStorage';
 import { NoOpStorageAdapter } from './noOpStorage';
-import { SDKConfig } from '../../types';
+import { SDKConfig, StorageType } from '../../types';
 
 
 export interface StorageAdapter {
@@ -48,42 +48,42 @@ function isReadOnlyFileSystem(): boolean {
 /**
  * Auto-detect the best storage type for the current environment
  */
-function detectOptimalStorageType(): 'memory' | 'file' | 'localStorage' {
+function detectOptimalStorageType(): StorageType {
   if (isBrowser()) {
-    return 'localStorage';
+    return StorageType.LOCAL_STORAGE;
   }
 
   if (isNodeJS()) {
     // In containerized or serverless environments, prefer memory
     if (isContainerized() || isReadOnlyFileSystem()) {
-      return 'memory';
+      return StorageType.MEMORY;
     }
     // For traditional servers, use file storage
-    return 'file';
+    return StorageType.FILE;
   }
 
   // Fallback to memory for unknown environments
-  return 'memory';
+  return StorageType.MEMORY;
 }
 
 /**
  * Creates the appropriate storage adapter based on type and configuration
  */
 export function createStorageAdapter(
-  storageType: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled' = 'auto',
+  storageType: StorageType = StorageType.AUTO,
   cacheDirectory?: string
 ): StorageAdapter {
-  if (storageType === 'disabled') {
+  if (storageType === StorageType.DISABLED) {
     return new NoOpStorageAdapter();
   }
 
   // Resolve 'auto' to a concrete type
-  if (storageType === 'auto') {
+  if (storageType === StorageType.AUTO) {
     storageType = detectOptimalStorageType();
   }
 
   switch (storageType) {
-    case 'localStorage':
+    case StorageType.LOCAL_STORAGE:
       if (isBrowser()) {
         return new LocalStorageAdapter();
       } else {
@@ -91,7 +91,7 @@ export function createStorageAdapter(
         return new MemoryStorageAdapter();
       }
 
-    case 'file':
+    case StorageType.FILE:
       if (isNodeJS()) {
         try {
           return new FileStorageAdapter(cacheDirectory);
@@ -109,7 +109,7 @@ export function createStorageAdapter(
         }
       }
 
-    case 'memory':
+    case StorageType.MEMORY:
       return new MemoryStorageAdapter();
 
     default:
@@ -127,7 +127,7 @@ let storageInstance: StorageAdapter | null = null;
  * Initialize storage with the given configuration
  */
 export function initStorage(
-  storageType: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled' = 'auto',
+  storageType: StorageType = StorageType.AUTO,
   cacheDirectory?: string
 ): StorageAdapter {
   storageInstance = createStorageAdapter(storageType, cacheDirectory);
@@ -139,7 +139,7 @@ export function initStorage(
  */
 export function getStorage(): StorageAdapter {
   if (!storageInstance) {
-    storageInstance = createStorageAdapter('auto');
+    storageInstance = createStorageAdapter(StorageType.AUTO);
   }
   return storageInstance;
 }

@@ -61,6 +61,14 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 
 };
 
+export enum StorageType {
+  MEMORY = 'memory',
+  FILE = 'file',
+  LOCAL_STORAGE = 'localStorage',
+  AUTO = 'auto',
+  DISABLED = 'disabled',
+}
+
 /**
  * Global SDK configuration
  */
@@ -73,7 +81,7 @@ export type SDKConfig = {
   retries: number;
   timeout: number;
   enableStorage: boolean; // Whether to enable storage at all
-  storageType: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled'; // Type of storage to use
+  storageType: StorageType; // Type of storage to use
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  

@@ -9,6 +9,7 @@ import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, sleep } from "./utils";
+import { StorageType } from "./types";
 
 const isBatchingEnabled = false;
 
@@ -64,7 +65,7 @@ export async function initClient(
   configBuilder.version(options.version || packageJson.version);
   configBuilder.debug(options.debug || false);
   configBuilder.verbose(options.verbose || false);
-  configBuilder.storageType(options.storageType || 'auto');
+  configBuilder.storageType(options.storageType || StorageType.AUTO);
   config = configBuilder.build();
   
   // Validate required configuration
@@ -81,7 +82,7 @@ export async function initClient(
   initOnlineDetection();
   
   // Initialize storage
-  const storageType = isStorageEnabled(config) ? config.storageType : 'disabled';
+  const storageType = isStorageEnabled(config) ? config.storageType : StorageType.DISABLED;
   initStorage(storageType, config.cacheDirectory);
 
   // Initialize queue manager with dependencies

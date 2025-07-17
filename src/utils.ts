@@ -1,5 +1,5 @@
-import { config } from "process";
-import type { SDKConfig, MonitorOptions } from "./types";
+import type { SDKConfig, MonitorOptions} from "./types";
+import { StorageType } from "./types";
 
 // Common patterns for sanitizing sensitive data
 export const DEFAULT_SANITIZE_PATTERNS = [
@@ -194,7 +194,7 @@ export class ConfigBuilder {
     return this;
   }
 
-  storageType(type: 'memory' | 'file' | 'localStorage' | 'auto' | 'disabled' = 'auto'): ConfigBuilder {
+  storageType(type: StorageType = StorageType.AUTO): ConfigBuilder {
     this.config.storageType = type;
     return this;
   }
