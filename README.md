@@ -292,37 +292,37 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 ```
 
 </details>
+
 ```typescript
 import { advancedMonitor } from "@olakai/api-sdk";
 
 const loginUser = advancedMonitor(
-async (email: string, sessionId: string) => {
-// Your login logic
-return { success: true, userId: "123" };
-},
-{
-capture: ({ args, result }) => ({
-input: {
-email: args[0],
-requestTime: Date.now(),
-},
-output: {
-success: result.success,
-userId: result.userId,
-},
-}),
-userId: (args) => args[0], // dynamic user ID
-chatId: (args) => args[1], // session tracking
-sanitize: true, // remove sensitive data
-priority: "high", // queue priority
-task: "Authentication",
-subTask: "user-login",
-}
+  async (email: string, sessionId: string) => {
+    // Your login logic
+    return { success: true, userId: "123" };
+  },
+  {
+    capture: ({ args, result }) => ({
+      input: {
+        email: args[0],
+        requestTime: Date.now(),
+      },
+      output: {
+        success: result.success,
+        userId: result.userId,
+      },
+    }),
+    userId: (args) => args[0], // dynamic user ID
+    chatId: (args) => args[1], // session tracking
+    sanitize: true, // remove sensitive data
+    priority: "high", // queue priority
+    task: "Authentication",
+    subTask: "user-login",
+  }
 );
 
 await loginUser("user@example.com", "session-123");
-
-````
+```
 
 ### Execution Control
 
@@ -350,7 +350,7 @@ const controlledFunction = advancedMonitor(
 );
 
 await controlledFunction("sensitive-operation");
-````
+```
 
 ### Middleware System
 
