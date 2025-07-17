@@ -72,14 +72,6 @@ export function validateMonitorOptions<TArgs extends any[], TResult>(
     errors.push("Capture function is required");
   }
 
-  if (options.timeout !== undefined && options.timeout <= 0) {
-    errors.push("Timeout must be positive");
-  }
-
-  if (options.retries !== undefined && options.retries < 0) {
-    errors.push("Retries must be non-negative");
-  }
-
   return errors;
 }
 

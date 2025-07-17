@@ -50,8 +50,6 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   control?: ControlOptions<TArgs>; // Control configuration
-  timeout?: number; // Timeout for the API call
-  retries?: number; // Number of retries for failed API calls
 };
 
 export enum StorageType {

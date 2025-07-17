@@ -1,5 +1,5 @@
 import { sendToAPI, sendToControlAPI, getConfig } from "./client";
-import type { MonitorOptions, ControlPayload, ControlResponse } from "./types";
+import type { MonitorOptions, ControlPayload, ControlResponse, SDKConfig } from "./types";
 import type { Middleware } from "./middleware";
 import { toApiString } from "./utils";
 
@@ -254,7 +254,7 @@ export function monitor<TArgs extends any[], TResult>(
     return async (...args: TArgs): Promise<TResult> => {
 
       //========== Initialize monitoring data
-      let config: any;
+      let config: SDKConfig;
       let start: number;
       let processedArgs = args;
 
@@ -340,8 +340,8 @@ export function monitor<TArgs extends any[], TResult>(
               };
 
               await sendToAPI(payload, {
-                retries: options.retries,
-                timeout: options.timeout,
+                retries: config.retries,
+                timeout: config.timeout,
                 priority: "high", // Errors always get high priority
               });
             }
@@ -394,8 +394,8 @@ export function monitor<TArgs extends any[], TResult>(
 
             // Send to API (with batching and retry logic handled in client)
             await sendToAPI(payload, {
-              retries: options.retries,
-              timeout: options.timeout,
+              retries: config.retries,
+              timeout: config.timeout,
               priority: options.priority || "normal",
             });
           }, "success monitoring");
