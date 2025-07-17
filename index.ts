@@ -30,8 +30,6 @@ export {
 export {
   validateConfig,
   validateMonitorOptions,
-  generateId,
-  formatDuration,
   getEnvironment,
   ConfigBuilder,
   createConfig,
