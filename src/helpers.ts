@@ -32,7 +32,8 @@ export const capture = {
     userId?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
-    subTask?: string
+    subTask?: string,
+    shouldScore?: boolean,
   }) => ({
     capture: ({ args }: { args: TArgs; result: TResult }) => ({
       input: args.length === 1 ? args[0] : args,
@@ -48,7 +49,8 @@ export const capture = {
     userId?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
-    subTask?: string
+    subTask?: string,
+    shouldScore?: boolean,
   }) => ({
     capture: ({ result }: { args: TArgs; result: TResult }) => ({
       input: "Function called",
@@ -66,7 +68,8 @@ export const capture = {
     userId?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
-    subTask?: string
+    subTask?: string,
+    shouldScore?: boolean,
   }) => ({
     capture: ({ args, result }: { args: TArgs; result: TResult }) => ({
       input: config.input(args),
@@ -90,6 +93,7 @@ export function simpleMonitor<T extends (...args: any[]) => any>(
     chatId?: string | ((args: Parameters<T>) => string),
     task?: string,
     subTask?: string,
+    shouldScore?: boolean,
   }
 ): T {
   const monitorOptions = {

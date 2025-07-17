@@ -203,6 +203,31 @@ await processOrder("order-123");
 
 **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
 
+### Obtain Scoring of the Prompt
+
+```typescript
+import { simpleMonitor } from "@olakai/api-sdk";
+
+// Works with any function
+const processOrder = simpleMonitor(
+  async (orderId: string) => {
+    // Your business logic
+    return { success: true, orderId };
+  },
+  {
+    task: "Customer service", // Optional: give it a task
+    subtask: "process-order", // Optional: give it a subtask
+    getUserId: "example@olakai.ai" | ((args) => string), //Optional: You can pass a string or a function that will fetch the userId!
+    getChatId: "123" | ((args) => string), //Optional: You can pass a string or a function that will fetch the chatId!
+    shouldScore: true,
+  }
+);
+
+await processOrder("order-123");
+```
+
+**What it does?** This feature lets you specify if the "prompt" (so the args of the function you monitor), should get a "prompting score", the same way Olakai is doing it for standard prompts in the UNO product.
+
 ## Common Patterns
 
 ### Capture Only What You Need
