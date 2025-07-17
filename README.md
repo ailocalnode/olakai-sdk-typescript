@@ -21,7 +21,7 @@ import { initClient, quickMonitor } from "@olakai/api-sdk";
 await initClient("your-api-key", "https://your-olakai-domain.com");
 
 // 2. Wrap any function - that's it!
-const sayHello = quickMonitor("greeting", async (name: string) => {
+const sayHello = quickMonitor(async (name: string) => {
   return `Hello, ${name}!`;
 });
 
@@ -31,6 +31,7 @@ console.log(result); // "Hello, World!"
 ```
 
 **That's it!** Your function calls are now being monitored automatically. No complex configuration needed.
+**What is does?** All inputs and outputs of the function are being sent to the API!
 
 ---
 

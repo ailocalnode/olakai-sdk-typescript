@@ -108,13 +108,15 @@ export function quickMonitor<T extends (...args: any[]) => any>(
 export function userMonitor<T extends (...args: any[]) => any>(
   fn: T,
   options: {
-    task: string,
+    task?: string,
+    subTask?: string,
     getUserId: (args: Parameters<T>) => string,
     getChatId?: (args: Parameters<T>) => string,
   }
 ): T {
   return simpleMonitor(fn, {
-    task: options.task,
+    task: options.task || "",
+    subTask: options.subTask || "",
     userId: options.getUserId,
     chatId: options.getChatId,
   });
