@@ -15,10 +15,10 @@ npm install olakai-sdk
 ## Quick Start - The Easy & Fast Way
 
 ```typescript
-import { initClient, quickMonitor } from "@olakai/api-sdk";
+import { initClient, simpleMonitor } from olakai-sdk;
 
 // 1. Initialize once
-initClient("your-api-key", "https://your-olakai-domain.com");
+initClient("your-olakai-api-key", "https://your-olakai-domain.com");
 
 // 2. Wrap any function - that's it!
 const sayHello = simpleMonitor(async (name: string) => {
@@ -67,7 +67,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, quickMonitor } from "@olakai/api-sdk";
+import { initClient, simpleMonitor } from "olakai-sdk";
 
 // Initialize Olakai SDK
 initClient("your-olakai-api-key", "https://your-domain.com");
@@ -103,7 +103,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, quickMonitor } from "@olakai/api-sdk";
+import { initClient, simpleMonitor } from "olakai-sdk";
 
 initClient("your-olakai-api-key", "https://your-domain.com");
 
@@ -160,7 +160,7 @@ Built-in error handling, retries, and offline support
 ### Monitor Any Function
 
 ```typescript
-import { simpleMonitor } from "@olakai/api-sdk";
+import { simpleMonitor } from "olakai-sdk";
 
 // Works with any function
 const processOrder = simpleMonitor(
@@ -182,7 +182,7 @@ await processOrder("order-123");
 ### Track Users (For Multi-User Apps)
 
 ```typescript
-import { simpleMonitor } from "@olakai/api-sdk";
+import { simpleMonitor } from "olakai-sdk";
 
 // Works with any function
 const processOrder = simpleMonitor(
@@ -206,7 +206,7 @@ await processOrder("order-123");
 ### Obtain Scoring of the Prompt
 
 ```typescript
-import { simpleMonitor } from "@olakai/api-sdk";
+import { simpleMonitor } from "olakai-sdk";
 
 // Works with any function
 const processOrder = simpleMonitor(
@@ -233,7 +233,7 @@ await processOrder("order-123");
 ### Capture Only What You Need
 
 ```typescript
-import { simpleMonitor, capture } from "@olakai/api-sdk";
+import { simpleMonitor, capture } from "olakai-sdk";
 
 // Capture everything (default)
 const monitorAll = simpleMonitor(myFunction, capture.all());
@@ -281,7 +281,7 @@ const robustFunction = simpleMonitor(
 Sometimes you need fine-grained control. The `advancedMonitor` function gives you full access to all monitoring options:
 
 ```typescript
-import { advancedMonitor } from "@olakai/api-sdk";
+import { advancedMonitor } from "olakai-sdk";
 
 const testFunction = advancedMonitor(
   async... ,
@@ -321,7 +321,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 </details>
 
 ```typescript
-import { advancedMonitor } from "@olakai/api-sdk";
+import { advancedMonitor } from "olakai-sdk";
 
 const loginUser = advancedMonitor(
   async (email: string, sessionId: string) => {
@@ -384,7 +384,7 @@ await controlledFunction("sensitive-operation");
 Add behavior to all monitored functions:
 
 ```typescript
-import { addMiddleware, createLoggingMiddleware } from "@olakai/api-sdk";
+import { addMiddleware, createLoggingMiddleware } from "olakai-sdk";
 
 // Add logging to all monitored functions
 addMiddleware(createLoggingMiddleware({ level: "info" }));
@@ -410,7 +410,7 @@ addMiddleware({
 ### Setup
 
 ```typescript
-import { initClient } from "@olakai/api-sdk";
+import { initClient } from "olakai-sdk";
 
 initClient("your-olakai-api-key", "https://your-domain.com");
 ```
