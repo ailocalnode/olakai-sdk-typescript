@@ -270,7 +270,6 @@ initClient("your-olakai-api-key", "https://your-domain.com");
 | ----------------------------- | ------------------------- | ----------------------------- |
 | `quickMonitor(name, fn)`      | Simplest monitoring       | Quick setup, just need a name |
 | `simpleMonitor(fn, options?)` | Auto-capture with options | Most common use case          |
-| `userMonitor(fn, options)`    | User tracking made easy   | Multi-user applications       |
 
 ### Helper Objects
 
@@ -342,5 +341,4 @@ MIT © [Olakai](https://olakai.ai)
 **Need help?**
 
 - 📖 [Documentation](https://docs.olakai.ai)
-- 💬 [Discord Community](https://discord.gg/olakai)
 - 📧 [Support Email](mailto:support@olakai.ai)

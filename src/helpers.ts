@@ -14,7 +14,9 @@ export const capture = {
    */
   all: <TArgs extends any[], TResult>(options?: { 
     userId?: string | ((args: TArgs) => string),
-    chatId?: string | ((args: TArgs) => string) 
+    chatId?: string | ((args: TArgs) => string),
+    task?: string,
+    subTask?: string
   }) => ({
     capture: ({ args, result }: { args: TArgs; result: TResult }) => ({
       input: args.length === 1 ? args[0] : args,
@@ -28,7 +30,9 @@ export const capture = {
    */
   input: <TArgs extends any[], TResult>(options?: { 
     userId?: string | ((args: TArgs) => string),
-    chatId?: string | ((args: TArgs) => string) 
+    chatId?: string | ((args: TArgs) => string),
+    task?: string,
+    subTask?: string
   }) => ({
     capture: ({ args }: { args: TArgs; result: TResult }) => ({
       input: args.length === 1 ? args[0] : args,
@@ -42,7 +46,9 @@ export const capture = {
    */
   output: <TArgs extends any[], TResult>(options?: { 
     userId?: string | ((args: TArgs) => string),
-    chatId?: string | ((args: TArgs) => string) 
+    chatId?: string | ((args: TArgs) => string),
+    task?: string,
+    subTask?: string
   }) => ({
     capture: ({ result }: { args: TArgs; result: TResult }) => ({
       input: "Function called",
@@ -58,7 +64,9 @@ export const capture = {
     input: (args: TArgs) => any,
     output: (result: TResult) => any,
     userId?: string | ((args: TArgs) => string),
-    chatId?: string | ((args: TArgs) => string)
+    chatId?: string | ((args: TArgs) => string),
+    task?: string,
+    subTask?: string
   }) => ({
     capture: ({ args, result }: { args: TArgs; result: TResult }) => ({
       input: config.input(args),
@@ -66,6 +74,8 @@ export const capture = {
     }),
     userId: config.userId,
     chatId: config.chatId,
+    task: config.task,
+    subTask: config.subTask,
   }),
 };
 
