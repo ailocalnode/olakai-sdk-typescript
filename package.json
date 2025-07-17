@@ -1,6 +1,6 @@
 {
   "name": "olakai-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "This document demonstrates how to use the Olakai SDK with all its features.",
   "main": "index.js",
   "scripts": {
