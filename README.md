@@ -12,165 +12,188 @@ A TypeScript SDK for monitoring function calls and controlling execution with re
 npm install @olakai/api-sdk
 ```
 
-## Quick Start
+## Quick Start - The Easy Way
 
 ```typescript
-import { initClient, monitor } from "@olakai/api-sdk";
+import { initClient, quickMonitor } from "@olakai/api-sdk";
 
-// Initialize the SDK
-initClient("your-api-key", "https://your-olakai-domain.com");
+// 1. Initialize once
+await initClient("your-api-key", "https://your-olakai-domain.com");
 
-// Monitor a function with type parameters: <[args], result>
-const monitored = monitor<
-  [string, string],
-  { success: boolean; userId: string }
->({
-  capture: ({ args, result }) => ({
-    input: { email: args[0] },
-    output: { success: result.success },
-  }),
+// 2. Wrap any function - that's it!
+const sayHello = quickMonitor("greeting", async (name: string) => {
+  return `Hello, ${name}!`;
 });
 
-const loginUser = monitored(async (email: string, password: string) => {
-  // Your login logic
-  return { success: true, userId: "123" };
-});
+// 3. Use normally - monitoring happens automatically
+const result = await sayHello("World");
+console.log(result); // "Hello, World!"
+```
 
-// Use it normally - monitoring happens automatically
+**That's it!** Your function calls are now being monitored automatically. No complex configuration needed.
+
+---
+
+## 🚀 **Why Use Olakai SDK?**
+
+### ✅ **Zero Configuration Monitoring**
+
+Just wrap your functions and start monitoring immediately
+
+### ✅ **Never Breaks Your Code**
+
+If monitoring fails, your functions still work perfectly
+
+### ✅ **Smart Type Inference**
+
+TypeScript automatically figures out your function types
+
+### ✅ **Production Ready**
+
+Built-in error handling, retries, and offline support
+
+---
+
+## Simple Examples
+
+### Monitor Any Function
+
+```typescript
+import { simpleMonitor } from "@olakai/api-sdk";
+
+// Works with any function
+const processOrder = simpleMonitor(
+  async (orderId: string) => {
+    // Your business logic
+    return { success: true, orderId };
+  },
+  {
+    task: "process-order", // Optional: give it a name
+  }
+);
+
+await processOrder("order-123");
+```
+
+### Track Users (For Multi-User Apps)
+
+```typescript
+import { userMonitor } from "@olakai/api-sdk";
+
+const loginUser = userMonitor(
+  async (email: string, password: string) => {
+    // Your login logic
+    return { success: true, userId: "user-123" };
+  },
+  {
+    task: "user-login",
+    getUserId: (args) => args[0], // first argument is email
+  }
+);
+
 await loginUser("user@example.com", "password");
 ```
 
-## Core Features
-
-### 📊 **Function Monitoring**
-
-Automatically capture function inputs and outputs for analysis
-
-### 🛡️ **Execution Control**
-
-Block function execution based on real-time API decisions
-
-### 🔧 **Middleware System**
-
-Add cross-cutting concerns like logging, rate limiting, and validation
-
-### 💾 **Offline Support**
-
-Queue requests when offline, sync when connection is restored
-
-### 🔒 **Data Sanitization**
-
-Automatically remove sensitive data like passwords and API keys
-
 ---
 
-## Simple Usage
+## Common Patterns
 
-### Basic Monitoring
+### Capture Only What You Need
 
 ```typescript
-const monitoredFunction = monitor<
-  [{ items: any[] }],
-  { processed: boolean; count: number }
->({
-  capture: ({ args, result }) => ({
-    input: args[0],
-    output: result,
-  }),
-});
+import { simpleMonitor, capture } from "@olakai/api-sdk";
 
-const processData = monitoredFunction(async (data) => {
-  return { processed: true, count: data.items.length };
-});
+// Capture everything (default)
+const monitorAll = simpleMonitor(myFunction, capture.all());
+
+// Capture only inputs
+const monitorInputs = simpleMonitor(myFunction, capture.input());
+
+// Capture only outputs
+const monitorOutputs = simpleMonitor(myFunction, capture.output());
+
+// Custom capture
+const monitorCustom = simpleMonitor(
+  myFunction,
+  capture.custom({
+    input: (args) => ({ email: args[0] }),
+    output: (result) => ({ success: result.success }),
+  })
+);
 ```
 
-# TIPS: All the "args" mentionned, are the args you're passing to the function you want to monitor
-
-### User and Session Tracking
+### Error Handling Made Easy
 
 ```typescript
-const tracked = monitor<
-  [{ userId: string; sessionId: string; action: string }],
-  { success: boolean }
->({
-  userId: (args?) => args[0].userId,
-  chatId: (args?) => args[0].sessionId,
-  capture: ({ args, result }) => ({
-    input: { action: args[0].action },
-    output: { success: result.success },
-  }),
-});
-```
-
-If you want to use the userId, the implementation for now wants you to pass the email of the user. The latter have to match an email for an Olakai account
-The "chatId" is used by Olakai to gather prompts together in a "chat" format. This is optionnal, it's your choice to use it or not.
-
-### Error Handling
-
-```typescript
-const resilient = monitor<[any], any>({
-  capture: ({ args, result }) => ({
-    input: args[0],
-    output: result,
-  }),
-  onError: (error, args) => ({
-    input: args[0],
-    output: { error: error.message },
-  }),
-});
+const robustFunction = simpleMonitor(
+  async (data: any) => {
+    // This might throw an error
+    return await riskyOperation(data);
+  },
+  {
+    task: "risky-operation",
+    onError: (error, args) => ({
+      input: args[0],
+      output: { error: error.message },
+    }),
+  }
+);
 ```
 
 ---
 
-## Advanced Usage
+## When You Need More Control
+
+### Advanced Monitoring
+
+Sometimes you need fine-grained control. The original `advancedMonitor` function is still available:
+
+```typescript
+import { monitor } from "@olakai/api-sdk";
+
+const advancedMonitor = advancedMonitor({
+  capture: ({ args, result }) => ({
+    input: {
+      email: args[0],
+      requestTime: Date.now(),
+    },
+    output: {
+      success: result.success,
+      userId: result.userId,
+    },
+  }),
+  userId: (args) => args[0], // dynamic user ID
+  chatId: (args) => args[1], // session tracking
+  sanitize: true, // remove sensitive data
+  priority: "high", // queue priority
+});
+
+const loginUser = advancedMonitor(async (email: string, sessionId: string) => {
+  return { success: true, userId: "123" };
+});
+```
 
 ### Execution Control
 
 Block function execution based on real-time API decisions:
 
 ```typescript
-const controlled = monitor<[string, string], { success: boolean }>({
+const controlledFunction = advancedMonitor({
   capture: ({ args, result }) => ({
-    input: { userId: args[0], action: args[1] },
+    input: { action: args[0] },
     output: result,
   }),
   control: {
     enabled: true,
-    captureInput: (args) => ({
-      userId: args[0],
-      action: args[1],
-      timestamp: Date.now(),
-    }),
+    captureInput: (args) => ({ action: args[0] }),
     onBlocked: (args, response) => {
       throw new Error(`Access denied: ${response.reason}`);
     },
   },
 });
-
-const sensitiveOperation = controlled(
-  async (userId: string, action: string) => {
-    // This only runs if the control API allows it
-    return { success: true };
-  }
-);
 ```
 
-### Data Sanitization
-
-```typescript
-const secure = monitor<[{ email: string; password: string }], any>({
-  sanitize: true, // Enables built-in sanitization
-  capture: ({ args, result }) => ({
-    input: {
-      email: args[0].email,
-      password: args[0].password, // Will be sanitized
-    },
-    output: result,
-  }),
-});
-```
-
-### Middleware
+### Middleware System
 
 Add behavior to all monitored functions:
 
@@ -198,136 +221,134 @@ addMiddleware({
 
 ## Configuration
 
+### Basic Setup
+
 ```typescript
-initClient("your-api-key", "https://your-domain.com");
+import { initClient } from "@olakai/api-sdk";
+
+await initClient("your-api-key", "https://your-domain.com");
 ```
 
-## API Reference
-
-### Core Functions
-
-#### `initClient(apiKey, domainUrl, options?)`
-
-Initialize the SDK with your API credentials.
-
-#### `monitor<TArgs, TResult>(options)`
-
-Create a monitored version of a function with TypeScript generics.
-
-**Type Parameters:**
-
-- `TArgs` - Function arguments as a tuple type (e.g., `[string, number]`)
-- `TResult` - Function return type (e.g., `{success: boolean}`)
-
-**Options:**
-
-- `capture`: Function to extract input/output data
-- `onError`: Handle function errors
-- `userId`: User identifier (string or function)
-- `chatId`: Session identifier (string or function)
-- `control`: Execution control configuration
-- `sanitize`: Enable data sanitization
-- `enabled`: Conditional monitoring
-- `sampleRate`: Percentage of calls to monitor (0-1)
-
-#### `addMiddleware(middleware)` / `removeMiddleware(name)`
-
-Add or remove global middleware.
-
-### Utilities
-
-#### `getConfig()`
-
-Get current SDK configuration.
-
-#### `getQueueSize()` / `clearQueue()` / `flushQueue()`
-
-Manage the request queue.
-
----
-
-## Built-in Middleware
+### Advanced Configuration
 
 ```typescript
-import {
-  createLoggingMiddleware,
-  createRateLimitMiddleware,
-  createCachingMiddleware,
-  createTimeoutMiddleware,
-} from "@olakai/api-sdk";
-
-// Available middleware creators
-addMiddleware(createLoggingMiddleware({ level: "info" }));
-addMiddleware(createRateLimitMiddleware({ maxCalls: 100, windowMs: 60000 }));
-addMiddleware(createCachingMiddleware({ ttlMs: 300000 }));
-addMiddleware(createTimeoutMiddleware(30000));
-```
-
----
-
-## Examples
-
-### Express.js API
-
-```typescript
-import express from "express";
-import { initClient, monitor } from "@olakai/api-sdk";
-
-await initClient(process.env.OLAKAI_API_KEY!, "https://api.olakai.com");
-
-const app = express();
-
-const apiMonitor = monitor<
-  [any, any],
-  { statusCode: number; duration: number }
->({
-  userId: (args) => args[0].user?.id || "anonymous",
-  capture: ({ args, result }) => ({
-    input: {
-      method: args[0].method,
-      path: args[0].path,
-      userAgent: args[0].get("User-Agent"),
-    },
-    output: {
-      statusCode: result.statusCode,
-      duration: result.duration,
-    },
-  }),
-});
-
-app.get(
-  "/api/users/:id",
-  apiMonitor(async (req, res) => {
-    const start = Date.now();
-    const user = await getUserById(req.params.id);
-    res.json(user);
-    return { statusCode: 200, duration: Date.now() - start };
-  })
-);
-```
-
----
-
-## Error Handling
-
-The SDK is designed to never break your application. If monitoring fails:
-
-- Your original function still executes normally
-- Errors are logged (if debug mode is enabled)
-- The global `onError` handler is called (if configured)
-
-```typescript
-await initClient("api-key", "domain", {
+await initClient("your-api-key", "https://your-domain.com", {
   debug: true, // Enable error logging
+  verbose: true, // Enable detailed logging
   onError: (error) => {
     console.error("Monitoring error:", error);
     // Send to your error tracking service
   },
+  sanitizePatterns: [/password/gi, /secret/gi], // Remove sensitive data
+  batchSize: 10, // Batch size for API calls
+  retries: 3, // Number of retries for failed requests
 });
 ```
+
+---
+
+## Tips & Best Practices
+
+### ✅ **Do This**
+
+- Start with `quickMonitor` or `simpleMonitor`
+- Use descriptive task names
+- Monitor important business logic functions
+- Set up user tracking for multi-user apps
+
+### ❌ **Avoid This**
+
+- Don't monitor every tiny utility function
+- Don't put sensitive data in task names
+- Don't monitor authentication functions that handle passwords
+
+### 🔒 **Security Notes**
+
+- The SDK automatically sanitizes common sensitive patterns
+- User IDs should be email addresses that match Olakai accounts
+- Enable `sanitize: true` for functions handling sensitive data
+
+---
+
+## API Reference
+
+### Simple Functions
+
+| Function                      | Description               | Use Case                      |
+| ----------------------------- | ------------------------- | ----------------------------- |
+| `quickMonitor(name, fn)`      | Simplest monitoring       | Quick setup, just need a name |
+| `simpleMonitor(fn, options?)` | Auto-capture with options | Most common use case          |
+| `userMonitor(fn, options)`    | User tracking made easy   | Multi-user applications       |
+
+### Helper Objects
+
+| Helper             | Description            | Example                 |
+| ------------------ | ---------------------- | ----------------------- |
+| `capture.all()`    | Capture input + output | Default behavior        |
+| `capture.input()`  | Capture only inputs    | Sensitive outputs       |
+| `capture.output()` | Capture only outputs   | Sensitive inputs        |
+| `capture.custom()` | Custom capture logic   | Complex data extraction |
+
+### Utilities
+
+- `getConfig()` - Get current SDK configuration
+- `getQueueSize()` - Check request queue size
+- `clearQueue()` - Clear pending requests
+- `flushQueue()` - Send all queued requests immediately
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**"Function not being monitored"**
+
+- Check that `initClient()` was called first
+- Verify your API key and domain URL
+- Check browser console for errors (if debug: true)
+
+**"TypeScript errors"**
+
+- Make sure you're using TypeScript 4.0+
+- The helpers use automatic type inference
+
+**"Monitoring seems slow"**
+
+- Monitoring happens asynchronously and shouldn't affect performance
+- Use `priority: "low"` for non-critical functions
+- Check network connectivity
+
+### Debug Mode
+
+```typescript
+await initClient("key", "url", { debug: true, verbose: true });
+```
+
+This will log detailed information about what the SDK is doing.
+
+---
+
+## Examples Repository
+
+Check out our [examples repository](https://github.com/olakai/sdk-examples) for complete working examples:
+
+- Express.js REST API
+- Next.js application
+- Database monitoring
+- Authentication flows
+- Error handling patterns
 
 ---
 
 ## License
 
 MIT © [Olakai](https://olakai.ai)
+
+---
+
+**Need help?**
+
+- 📖 [Documentation](https://docs.olakai.ai)
+- 💬 [Discord Community](https://discord.gg/olakai)
+- 📧 [Support Email](mailto:support@olakai.ai)

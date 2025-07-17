@@ -1,8 +1,16 @@
-export { monitor, addMiddleware, removeMiddleware } from "./src/monitor";
+export { advancedMonitor, addMiddleware, removeMiddleware } from "./src/monitor";
 export {
   initClient,
   getConfig,
 } from "./src/client";
+
+// Export simplified helper functions
+export {
+  simpleMonitor,
+  quickMonitor,
+  userMonitor,
+  capture,
+} from "./src/helpers";
 export * from "./src/types";
 export { getQueueSize, clearQueue, flushQueue } from "./src/queue";
 
