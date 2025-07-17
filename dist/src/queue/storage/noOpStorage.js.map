@@ -1,0 +1,1 @@
+{"version":3,"file":"noOpStorage.js","sourceRoot":"","sources":["../../../../src/queue/storage/noOpStorage.ts"],"names":[],"mappings":";;;AAEA;;GAEG;AACH,MAAa,kBAAkB;IAC7B,OAAO,CAAC,IAAY;QAClB,OAAO,IAAI,CAAC;IACd,CAAC;IAED,OAAO,CAAC,IAAY,EAAE,MAAc;QAClC,QAAQ;IACV,CAAC;IAED,UAAU,CAAC,IAAY;QACrB,QAAQ;IACV,CAAC;IAED,KAAK;QACH,QAAQ;IACV,CAAC;CACF;AAhBD,gDAgBC"}
