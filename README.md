@@ -69,12 +69,15 @@ const processOrder = simpleMonitor(
     return { success: true, orderId };
   },
   {
-    task: "process-order", // Optional: give it a name
+    task: "Customer service", // Optional: give it a task
+    subtask: "process-order", // Optional: give it a subtask
   }
 );
 
 await processOrder("order-123");
 ```
+
+**What is does?** The difference here, is t
 
 ### Track Users (For Multi-User Apps)
 
