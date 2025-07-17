@@ -18,7 +18,7 @@ npm install olakai-sdk
 import { initClient, olakaiMonitor } from olakai-sdk;
 
 // 1. Initialize once
-initClient("your-olakai-api-key", "https://your-olakai-domain.com");
+initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
 
 // 2. Wrap any function - that's it!
 const sayHello = olakaiMonitor(async (name: string) => {
@@ -70,7 +70,7 @@ import OpenAI from "openai";
 import { initClient, olakaiMonitor } from "olakai-sdk";
 
 // Initialize Olakai SDK
-initClient("your-olakai-api-key", "https://your-domain.com");
+initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -105,7 +105,7 @@ const response = await generateResponse("Explain quantum computing");
 import OpenAI from "openai";
 import { initClient, olakaiMonitor } from "olakai-sdk";
 
-initClient("your-olakai-api-key", "https://your-domain.com");
+initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -412,13 +412,13 @@ addMiddleware({
 ```typescript
 import { initClient } from "olakai-sdk";
 
-initClient("your-olakai-api-key", "https://your-domain.com");
+initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
 ```
 
 ### Debug Mode
 
 ```typescript
-initClient("your-olakai-api-key", "https://your-domain.com", {
+initClient("your-olakai-api-key", "https://your-olakai-domain.ai", {
   debug: true,
   verbose: true,
 });
