@@ -21,7 +21,7 @@ import { initClient, quickMonitor } from "@olakai/api-sdk";
 initClient("your-api-key", "https://your-olakai-domain.com");
 
 // 2. Wrap any function - that's it!
-const sayHello = quickMonitor(async (name: string) => {
+const sayHello = simpleMonitor(async (name: string) => {
   return `Hello, ${name}!`;
 });
 
@@ -75,7 +75,7 @@ const openai = new OpenAI({
 });
 
 // Just wrap your function - that's the only change!
-const generateResponse = quickMonitor(async (prompt: string) => {
+const generateResponse = simpleMonitor(async (prompt: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -110,7 +110,7 @@ const openai = new OpenAI({
 });
 
 // Create a monitored version of the API call
-const monitoredCompletion = quickMonitor(async (messages: any[]) => {
+const monitoredCompletion = simpleMonitor(async (messages: any[]) => {
   return await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages,

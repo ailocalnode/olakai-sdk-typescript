@@ -103,14 +103,6 @@ export function simpleMonitor<T extends (...args: any[]) => any>(
   return monitor(monitorOptions)(fn as any) as T;
 }
 
-/**
- * Monitor function with minimal setup
- */
-export function quickMonitor<T extends (...args: any[]) => any>(
-  fn: T
-): T {
-  return simpleMonitor(fn);
-}
 
 export function advancedMonitor<T extends (...args: any[]) => any>(
     fn: T,

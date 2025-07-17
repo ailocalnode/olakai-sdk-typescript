@@ -7,7 +7,7 @@ export {
 // Export simplified helper functions
 export {
   simpleMonitor,
-  quickMonitor,
+  advancedMonitor,
   capture,
 } from "./src/helpers";
 export * from "./src/types";
