@@ -388,6 +388,14 @@ import { initClient } from "@olakai/api-sdk";
 initClient("your-olakai-api-key", "https://your-domain.com");
 ```
 
+### Debug Mode
+
+```typescript
+initClient("key", "url", { debug: true, verbose: true });
+```
+
+This will log detailed information about what the SDK is doing.
+
 ---
 
 ## Tips & Best Practices
@@ -460,14 +468,6 @@ initClient("your-olakai-api-key", "https://your-domain.com");
 - Monitoring happens asynchronously and shouldn't affect performance
 - Use `priority: "low"` for non-critical functions
 - Check network connectivity
-
-### Debug Mode
-
-```typescript
-initClient("key", "url", { debug: true, verbose: true });
-```
-
-This will log detailed information about what the SDK is doing.
 
 ---
 
