@@ -225,20 +225,20 @@ function resolveIdentifiers<TArgs extends any[]>(
  * @returns The monitored function
  */
 // Overload 1: curried
-export function advancedMonitor<TArgs extends any[], TResult>(
+export function monitor<TArgs extends any[], TResult>(
   options: MonitorOptions<TArgs, TResult>,
 ): (
   fn: (...args: TArgs) => Promise<TResult>,
 ) => (...args: TArgs) => Promise<TResult>;
 
 // Overload 2: direct
-export function advancedMonitor<TArgs extends any[], TResult>(
+export function monitor<TArgs extends any[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
   options: MonitorOptions<TArgs, TResult>,
 ): (...args: TArgs) => Promise<TResult>;
 
 // Implementation
-export function advancedMonitor<TArgs extends any[], TResult>(
+export function monitor<TArgs extends any[], TResult>(
   arg1: any,
   arg2?: any,
 ): any {
@@ -246,7 +246,7 @@ export function advancedMonitor<TArgs extends any[], TResult>(
     // Direct form: monitor(fn, options)
     const fn = arg1 as (...args: TArgs) => Promise<TResult>;
     const options = arg2 as MonitorOptions<TArgs, TResult>;
-    return advancedMonitor(options)(fn);
+    return monitor(options)(fn);
   }
   // Curried form: monitor(options)(fn)
   const options = arg1 as MonitorOptions<TArgs, TResult>;

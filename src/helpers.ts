@@ -2,7 +2,7 @@
  * Helper functions to make monitoring easier and more intuitive
  */
 
-import { advancedMonitor } from "./monitor";
+import { monitor } from "./monitor";
 import type { MonitorOptions } from "./types";
 
 /**
@@ -100,7 +100,7 @@ export function simpleMonitor<T extends (...args: any[]) => any>(
     ...options,
   };
 
-  return advancedMonitor(monitorOptions)(fn as any) as T;
+  return monitor(monitorOptions)(fn as any) as T;
 }
 
 /**
@@ -110,4 +110,11 @@ export function quickMonitor<T extends (...args: any[]) => any>(
   fn: T
 ): T {
   return simpleMonitor(fn);
+}
+
+export function advancedMonitor<T extends (...args: any[]) => any>(
+    fn: T,
+    options: MonitorOptions<Parameters<T>, ReturnType<T>>
+): T {
+    return monitor(options)(fn) as T;
 }

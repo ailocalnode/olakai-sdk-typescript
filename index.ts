@@ -1,4 +1,4 @@
-export { advancedMonitor, addMiddleware, removeMiddleware } from "./src/monitor";
+export { addMiddleware, removeMiddleware } from "./src/monitor";
 export {
   initClient,
   getConfig,
