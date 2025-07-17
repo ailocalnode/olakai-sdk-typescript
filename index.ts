@@ -28,10 +28,6 @@ export {
 
 // Re-export utilities
 export {
-  validateConfig,
   validateMonitorOptions,
-  getEnvironment,
-  ConfigBuilder,
-  createConfig,
   DEFAULT_SANITIZE_PATTERNS,
 } from "./src/utils";
