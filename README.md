@@ -20,8 +20,11 @@ import { initClient, monitor } from "@olakai/api-sdk";
 // Initialize the SDK
 await initClient("your-api-key", "https://your-olakai-domain.com");
 
-// Monitor a function
-const monitored = monitor({
+// Monitor a function with type parameters: <[args], result>
+const monitored = monitor<
+  [string, string],
+  { success: boolean; userId: string }
+>({
   capture: ({ args, result }) => ({
     input: { email: args[0] },
     output: { success: result.success },
@@ -66,7 +69,10 @@ Automatically remove sensitive data like passwords and API keys
 ### Basic Monitoring
 
 ```typescript
-const monitoredFunction = monitor({
+const monitoredFunction = monitor<
+  [{ items: any[] }],
+  { processed: boolean; count: number }
+>({
   capture: ({ args, result }) => ({
     input: args[0],
     output: result,
@@ -81,9 +87,12 @@ const processData = monitoredFunction(async (data) => {
 ### User and Session Tracking (Not totally implemented yet)
 
 ```typescript
-const tracked = monitor({
-  userId: (args) => string,
-  chatId: (args) => string,
+const tracked = monitor<
+  [{ userId: string; sessionId: string; action: string }],
+  { success: boolean }
+>({
+  userId: (args) => args[0].userId,
+  chatId: (args) => args[0].sessionId,
   capture: ({ args, result }) => ({
     input: { action: args[0].action },
     output: { success: result.success },
@@ -94,7 +103,7 @@ const tracked = monitor({
 ### Error Handling
 
 ```typescript
-const resilient = monitor({
+const resilient = monitor<[any], any>({
   capture: ({ args, result }) => ({
     input: args[0],
     output: result,
@@ -115,7 +124,7 @@ const resilient = monitor({
 Block function execution based on real-time API decisions:
 
 ```typescript
-const controlled = monitor({
+const controlled = monitor<[string, string], { success: boolean }>({
   capture: ({ args, result }) => ({
     input: { userId: args[0], action: args[1] },
     output: result,
@@ -133,16 +142,18 @@ const controlled = monitor({
   },
 });
 
-const sensitiveOperation = controlled(async (userId, action) => {
-  // This only runs if the control API allows it
-  return { success: true };
-});
+const sensitiveOperation = controlled(
+  async (userId: string, action: string) => {
+    // This only runs if the control API allows it
+    return { success: true };
+  }
+);
 ```
 
 ### Sampling and Conditional Monitoring
 
 ```typescript
-const sampled = monitor({
+const sampled = monitor<[{ environment: string }], any>({
   enabled: (args) => args[0].environment === "production",
   sampleRate: 0.1, // Monitor 10% of calls
   capture: ({ args, result }) => ({
@@ -155,7 +166,7 @@ const sampled = monitor({
 ### Data Sanitization
 
 ```typescript
-const secure = monitor({
+const secure = monitor<[{ email: string; password: string }], any>({
   sanitize: true, // Enables built-in sanitization
   capture: ({ args, result }) => ({
     input: {
@@ -235,9 +246,14 @@ await initClient(config.apiKey, config.domainUrl, config);
 
 Initialize the SDK with your API credentials.
 
-#### `monitor(options)`
+#### `monitor<TArgs, TResult>(options)`
 
-Create a monitored version of a function.
+Create a monitored version of a function with TypeScript generics.
+
+**Type Parameters:**
+
+- `TArgs` - Function arguments as a tuple type (e.g., `[string, number]`)
+- `TResult` - Function return type (e.g., `{success: boolean}`)
 
 **Options:**
 
@@ -297,7 +313,10 @@ await initClient(process.env.OLAKAI_API_KEY!, "https://api.olakai.com");
 
 const app = express();
 
-const apiMonitor = monitor({
+const apiMonitor = monitor<
+  [any, any],
+  { statusCode: number; duration: number }
+>({
   userId: (args) => args[0].user?.id || "anonymous",
   capture: ({ args, result }) => ({
     input: {
@@ -326,7 +345,7 @@ app.get(
 ### Database Operations
 
 ```typescript
-const dbMonitor = monitor({
+const dbMonitor = monitor<[string, any[]], { rows?: any[]; duration: number }>({
   capture: ({ args, result }) => ({
     input: {
       query: args[0].substring(0, 100), // Truncate long queries
