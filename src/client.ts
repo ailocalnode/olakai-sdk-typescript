@@ -6,7 +6,7 @@ import type {
   ControlResponse,
 } from "./types";
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
-import { initQueueManager, QueueDependencies } from "./queue";
+import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, sleep } from "./utils";
 
@@ -91,7 +91,10 @@ export async function initClient(
     sendWithRetry: sendWithRetry
   };
 
-  await initQueueManager(queueDependencies);
+  const queueManager = await initQueueManager(queueDependencies);
+  if (config.verbose) {
+    console.log("[Olakai SDK] Queue manager initialized successfully");
+  }
 }
 
 /**
@@ -218,7 +221,6 @@ export async function sendToAPI(
   }
 
   if (isBatchingEnabled) {
-    const { addToQueue } = await import('./queue');
     await addToQueue(payload, options);
   } else {
     await makeAPICall(payload);

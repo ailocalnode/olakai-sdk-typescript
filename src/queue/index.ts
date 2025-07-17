@@ -240,8 +240,19 @@ let queueManager: QueueManager | null = null;
  * Initialize the queue manager
  */
 export async function initQueueManager(dependencies: QueueDependencies): Promise<QueueManager> {
+  if (queueManager) {
+    if (dependencies.config.debug) {
+      console.warn('[Olakai SDK] Queue manager already initialized, replacing with new instance');
+    }
+  }
+  
   queueManager = new QueueManager(dependencies);
   await queueManager.initialize();
+  
+  if (dependencies.config.verbose) {
+    console.log('[Olakai SDK] Queue manager initialized with', queueManager.getSize(), 'items in queue');
+  }
+  
   return queueManager;
 }
 
