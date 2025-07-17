@@ -1,0 +1,1 @@
+{"version":3,"file":"custom.js","sourceRoot":"","sources":["../../../src/middleware/custom.ts"],"names":[],"mappings":";;;AAEO,MAAM,sBAAsB,GAAG,CAA+B,OAKpE,EAA8B,EAAE;IAC/B,OAAO;QACL,IAAI,EAAE,OAAO,CAAC,IAAI;QAClB,UAAU,EAAE,OAAO,CAAC,UAAU;QAC9B,SAAS,EAAE,OAAO,CAAC,SAAS;QAC5B,OAAO,EAAE,OAAO,CAAC,OAAO;KACzB,CAAC;AACJ,CAAC,CAAC;AAZW,QAAA,sBAAsB,0BAYjC"}
