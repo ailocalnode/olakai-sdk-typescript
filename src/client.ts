@@ -128,7 +128,7 @@ async function makeAPICall(
         "x-api-key": config.apiKey,
       },
       body: JSON.stringify(
-        Array.isArray(payload) ? payload : [payload],
+        Array.isArray(payload) ? payload : payload,
       ),
       signal: controller.signal,
     });
