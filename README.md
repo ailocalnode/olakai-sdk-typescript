@@ -12,7 +12,7 @@ A TypeScript SDK for monitoring function calls and controlling execution with re
 npm install @olakai/api-sdk
 ```
 
-## Quick Start - The Easy Way
+## Quick Start - The Easy & Fast Way
 
 ```typescript
 import { initClient, quickMonitor } from "@olakai/api-sdk";
