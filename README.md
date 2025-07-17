@@ -18,7 +18,7 @@ npm install @olakai/api-sdk
 import { initClient, quickMonitor } from "@olakai/api-sdk";
 
 // 1. Initialize once
-await initClient("your-api-key", "https://your-olakai-domain.com");
+initClient("your-api-key", "https://your-olakai-domain.com");
 
 // 2. Wrap any function - that's it!
 const sayHello = quickMonitor(async (name: string) => {
@@ -102,7 +102,7 @@ const processOrder = simpleMonitor(
 await processOrder("order-123");
 ```
 
-## **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
+**What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
 
 ## Common Patterns
 
@@ -229,28 +229,12 @@ addMiddleware({
 
 ## Configuration
 
-### Basic Setup
+### Setup
 
 ```typescript
 import { initClient } from "@olakai/api-sdk";
 
-await initClient("your-api-key", "https://your-domain.com");
-```
-
-### Advanced Configuration
-
-```typescript
-await initClient("your-api-key", "https://your-domain.com", {
-  debug: true, // Enable error logging
-  verbose: true, // Enable detailed logging
-  onError: (error) => {
-    console.error("Monitoring error:", error);
-    // Send to your error tracking service
-  },
-  sanitizePatterns: [/password/gi, /secret/gi], // Remove sensitive data
-  batchSize: 10, // Batch size for API calls
-  retries: 3, // Number of retries for failed requests
-});
+initClient("your-olakai-api-key", "https://your-domain.com");
 ```
 
 ---
@@ -330,7 +314,7 @@ await initClient("your-api-key", "https://your-domain.com", {
 ### Debug Mode
 
 ```typescript
-await initClient("key", "url", { debug: true, verbose: true });
+initClient("key", "url", { debug: true, verbose: true });
 ```
 
 This will log detailed information about what the SDK is doing.
