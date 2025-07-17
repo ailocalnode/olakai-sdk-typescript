@@ -521,5 +521,5 @@ MIT © [Olakai](https://olakai.ai)
 
 **Need help?**
 
-- 📖 [Documentation](https://docs.olakai.ai)
+- 📖 [Documentation](https://app.olakai.ai/docs/getting-started/getting-started)
 - 📧 [Support Email](mailto:support@olakai.ai)
