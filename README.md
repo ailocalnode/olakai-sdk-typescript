@@ -155,19 +155,6 @@ const sensitiveOperation = controlled(
 );
 ```
 
-### Sampling and Conditional Monitoring
-
-```typescript
-const sampled = monitor<[{ environment: string }], any>({
-  enabled: (args) => args[0].environment === "production",
-  sampleRate: 0.1, // Monitor 10% of calls
-  capture: ({ args, result }) => ({
-    input: args[0],
-    output: result,
-  }),
-});
-```
-
 ### Data Sanitization
 
 ```typescript
@@ -211,37 +198,9 @@ addMiddleware({
 
 ## Configuration
 
-### Basic Configuration
-
 ```typescript
-initClient("your-api-key", "https://your-domain.com", {
-  timeout: 30000,
-  retries: 3,
-  debug: true,
-});
+initClient("your-api-key", "https://your-domain.com");
 ```
-
-### Advanced Configuration
-
-```typescript
-import { ConfigBuilder } from "@olakai/api-sdk";
-
-const config = new ConfigBuilder()
-  .apiKey("your-api-key")
-  .domainUrl("https://your-domain.com")
-  .batchSize(50)
-  .batchTimeout(5000)
-  .timeout(20000)
-  .retries(3)
-  .debug(true)
-  .verbose(false)
-  .sanitizePatterns([/password/gi, /api[_-]?key/gi, /secret/gi])
-  .build();
-
-await initClient(config.apiKey, config.domainUrl, config);
-```
-
----
 
 ## API Reference
 
@@ -345,36 +304,6 @@ app.get(
     return { statusCode: 200, duration: Date.now() - start };
   })
 );
-```
-
-### Database Operations
-
-```typescript
-const dbMonitor = monitor<[string, any[]], { rows?: any[]; duration: number }>({
-  capture: ({ args, result }) => ({
-    input: {
-      query: args[0].substring(0, 100), // Truncate long queries
-      params: args[1],
-    },
-    output: {
-      rowCount: result.rows?.length || 0,
-      duration: result.duration,
-    },
-  }),
-  control: {
-    enabled: (args) => args[0].toLowerCase().includes("delete"),
-    captureInput: (args) => ({
-      queryType: "DELETE",
-      table: extractTableName(args[0]),
-    }),
-  },
-});
-
-const executeQuery = dbMonitor(async (sql: string, params: any[]) => {
-  const start = Date.now();
-  const result = await database.query(sql, params);
-  return { ...result, duration: Date.now() - start };
-});
 ```
 
 ---
