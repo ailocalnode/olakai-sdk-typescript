@@ -36,7 +36,6 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   capture: (ctx: { args: TArgs; result: TResult }) => {
     input: any;
     output: any;
-    metadata?: Record<string, any>;
   };
   onError?: (
     error: any,
@@ -44,7 +43,6 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   ) => {
     input: any;
     output: any;
-    metadata?: Record<string, any>;
   };
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
@@ -52,13 +50,8 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   control?: ControlOptions<TArgs>; // Control configuration
-  // May be deprecated if not needed
-  enabled?: boolean | ((args: TArgs) => boolean);
-  sampleRate?: number; // 0-1, percentage of calls to monitor
   timeout?: number; // Timeout for the API call
   retries?: number; // Number of retries for failed API calls
-  tags?: Record<string, string>; // Additional tags for filtering
-
 };
 
 export enum StorageType {

@@ -19,26 +19,6 @@ export function removeMiddleware(name: string) {
   }
 }
 
-// May be deprecated if not needed
-function shouldMonitor<TArgs extends any[]>(
-  options: MonitorOptions<TArgs, any>,
-  args: TArgs,
-): boolean {
-  // Check if monitoring is enabled
-  if (typeof options.enabled === "boolean" && !options.enabled) {
-    return false;
-  }
-  if (typeof options.enabled === "function" && !options.enabled(args)) {
-    return false;
-  }
-  // Check sample rate
-  if (options.sampleRate !== undefined && Math.random() > options.sampleRate) {
-    return false;
-  }
-
-  return true;
-}
-
 async function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
@@ -273,25 +253,7 @@ export function monitor<TArgs extends any[], TResult>(
   return (fn: (...args: TArgs) => Promise<TResult>) => {
     return async (...args: TArgs): Promise<TResult> => {
 
-      //========== Check if we should monitor this call - if not, just execute the function
-      let shouldMonitorCall = false;
-      try {
-        shouldMonitorCall = shouldMonitor(options, args);
-      } catch (error) {
-        safeMonitoringOperation(() => {
-          throw error;
-        }, "shouldMonitor check");
-        // If monitoring check fails, still execute the function
-        return fn(...args);
-      }
-      //========== End of shouldMonitor check
-
-      //========== If we should not monitor, execute the function
-      if (!shouldMonitorCall) {
-        return fn(...args);
-      }
-
-      //========== If we should monitor, initialize monitoring data
+      //========== Initialize monitoring data
       let config: any;
       let start: number;
       let processedArgs = args;
