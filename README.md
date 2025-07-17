@@ -18,7 +18,7 @@ npm install @olakai/api-sdk
 import { initClient, monitor } from "@olakai/api-sdk";
 
 // Initialize the SDK
-await initClient("your-api-key", "https://your-olakai-domain.com");
+initClient("your-api-key", "https://your-olakai-domain.com");
 
 // Monitor a function with type parameters: <[args], result>
 const monitored = monitor<
@@ -84,21 +84,26 @@ const processData = monitoredFunction(async (data) => {
 });
 ```
 
-### User and Session Tracking (Not totally implemented yet)
+# TIPS: All the "args" mentionned, are the args you're passing to the function you want to monitor
+
+### User and Session Tracking
 
 ```typescript
 const tracked = monitor<
   [{ userId: string; sessionId: string; action: string }],
   { success: boolean }
 >({
-  userId: (args) => args[0].userId,
-  chatId: (args) => args[0].sessionId,
+  userId: (args?) => args[0].userId,
+  chatId: (args?) => args[0].sessionId,
   capture: ({ args, result }) => ({
     input: { action: args[0].action },
     output: { success: result.success },
   }),
 });
 ```
+
+If you want to use the userId, the implementation for now wants you to pass the email of the user. The latter have to match an email for an Olakai account
+The "chatId" is used by Olakai to gather prompts together in a "chat" format. This is optionnal, it's your choice to use it or not.
 
 ### Error Handling
 
@@ -209,7 +214,7 @@ addMiddleware({
 ### Basic Configuration
 
 ```typescript
-await initClient("your-api-key", "https://your-domain.com", {
+initClient("your-api-key", "https://your-domain.com", {
   timeout: 30000,
   retries: 3,
   debug: true,
