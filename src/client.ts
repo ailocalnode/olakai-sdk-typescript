@@ -140,20 +140,24 @@ async function makeAPICall(
       const result = await response.json() as Record<string, any>;
       olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
       return { success: true, ...result };
+
     } else if (response.status === 207) {
       // Mixed success/failure (Multi-Status)
       const result = await response.json() as Record<string, any>;
       olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
       return { success: true, ...result }; // Note: overall success=true even for partial failures
+
     } else if (response.status === 500) {
       // All failed or system error
       const result = await response.json() as Record<string, any>;
       olakaiLoggger(`All batch requests failed: ${JSON.stringify(result)}`, "error");
       throw new Error(`Batch processing failed: ${result.message || response.statusText}`);
+
     } else if (!response.ok) {
       // Other error status codes
       olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      
     } else {
       // Legacy support for other 2xx status codes
       const result = await response.json() as Record<string, any>;

@@ -84,7 +84,7 @@ export type SDKConfig = {
 
 export type BatchRequest = {
   id: string;
-  payload: MonitorPayload;
+  payload: MonitorPayload[];
   timestamp: number;
   retries: number;
   priority: "low" | "normal" | "high";
