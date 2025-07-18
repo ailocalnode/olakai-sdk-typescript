@@ -5,7 +5,11 @@ import type { MonitorPayload, SDKConfig } from '../types';
 export interface QueueDependencies {
     config: SDKConfig;
     isOnline: () => boolean;
-    sendWithRetry: (payload: MonitorPayload | MonitorPayload[]) => Promise<boolean>;
+    sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<{
+        success: boolean;
+        response?: any;
+        error?: Error;
+    }>;
 }
 /**
  * Queue Manager - Handles all queue operations and state

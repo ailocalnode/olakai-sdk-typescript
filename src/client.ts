@@ -130,20 +130,35 @@ async function makeAPICall(
       signal: controller.signal,
     });
 
-    olakaiLoggger(`API response: ${JSON.stringify(response)}`, "info");
-
-    if(response.status !== 200 && response.status !== 201) {
-      olakaiLoggger(`The prompt was not created successfully in the UNO product: ${JSON.stringify(response)}`, "warn");
-    }
+    olakaiLoggger(`API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
+    // Handle different status codes for batch operations
+    if (response.status === 201) {
+      // All requests succeeded
+      const result = await response.json() as Record<string, any>;
+      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
+      return { success: true, ...result };
+    } else if (response.status === 207) {
+      // Mixed success/failure (Multi-Status)
+      const result = await response.json() as Record<string, any>;
+      olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
+      return { success: true, ...result }; // Note: overall success=true even for partial failures
+    } else if (response.status === 500) {
+      // All failed or system error
+      const result = await response.json() as Record<string, any>;
+      olakaiLoggger(`All batch requests failed: ${JSON.stringify(result)}`, "error");
+      throw new Error(`Batch processing failed: ${result.message || response.statusText}`);
+    } else if (!response.ok) {
+      // Other error status codes
+      olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } else {
+      // Legacy support for other 2xx status codes
+      const result = await response.json() as Record<string, any>;
+      return { success: true, ...result };
     }
-
-    const result = await response.json() as Record<string, any>;
-    return { success: true, ...result };
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
@@ -154,24 +169,31 @@ async function makeAPICall(
  * Send a payload to the API with retry logic
  * @param payload - The payload to send to the endpoint
  * @param maxRetries - The maximum number of retries
- * @returns A promise that resolves to true if the payload was sent successfully, false otherwise
+ * @returns A promise that resolves to an object with success status and details about batch results
  */
 async function sendWithRetry(
   payload: MonitorPayload | MonitorPayload[],
   maxRetries: number = config.retries!,
-): Promise<boolean> {
+): Promise<{ success: boolean; response?: APIResponse; error?: Error }> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      await makeAPICall(payload);
-      return true;
+      const response = await makeAPICall(payload);
+      
+      // For batch operations, check if we have partial failures
+      if (response.totalRequests && response.failureCount && response.failureCount > 0) {
+        olakaiLoggger(
+          `Batch partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
+          "info"
+        );
+      }
+      
+      return { success: true, response };
     } catch (err) {
       lastError = err as Error;
 
-      if (config.debug) {
-        olakaiLoggger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
-      }
+      olakaiLoggger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -187,8 +209,7 @@ async function sendWithRetry(
   
   olakaiLoggger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
   
-
-  return false;
+  return { success: false, error: lastError || new Error("Unknown error") };
 }
 
 /**
@@ -216,7 +237,16 @@ export async function sendToAPI(
   if (isBatchingEnabled) {
     await addToQueue(payload, options);
   } else {
-    await makeAPICall(payload);
+    // For non-batching mode, use makeAPICall directly and handle the response
+    const response = await makeAPICall(payload);
+    
+    // Log any batch-style response information if present
+    if (response.totalRequests && response.successCount !== undefined) {
+      olakaiLoggger(
+        `Direct API call result: ${response.successCount}/${response.totalRequests} requests succeeded`,
+        response.failureCount && response.failureCount > 0 ? "warn" : "info"
+      );
+    }
   }
 }
 

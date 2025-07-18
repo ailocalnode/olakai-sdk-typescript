@@ -9,7 +9,9 @@ exports.toApiString = toApiString;
 exports.isBrowser = isBrowser;
 exports.isNodeJS = isNodeJS;
 exports.sleep = sleep;
+exports.olakaiLoggger = olakaiLoggger;
 const types_1 = require("./types");
+const client_1 = require("./client");
 // Common patterns for sanitizing sensitive data
 exports.DEFAULT_SANITIZE_PATTERNS = [
     /\b[\w.-]+@[\w.-]+\.\w+\b/g, // Email addresses
@@ -201,9 +203,19 @@ function isNodeJS() {
  * @returns A promise that resolves after the given number of milliseconds
  */
 async function sleep(config, ms) {
-    if (config.verbose) {
-        console.log("[Olakai SDK] Sleeping for", ms, "ms");
-    }
+    olakaiLoggger(`Sleeping for ${ms}ms`, "info");
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function olakaiLoggger(message, level = "info") {
+    const config = (0, client_1.getConfig)();
+    if (config.verbose && level === "info") {
+        console.log(`[Olakai SDK] ${message}`);
+    }
+    else if (config.debug && level === "warn") {
+        console.warn(`[Olakai SDK] ${message}`);
+    }
+    else if (config.debug && level === "error") {
+        console.error(`[Olakai SDK] ${message}`);
+    }
 }
 //# sourceMappingURL=utils.js.map

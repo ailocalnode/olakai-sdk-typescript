@@ -36,4 +36,5 @@ export declare function isNodeJS(): boolean;
  * @returns A promise that resolves after the given number of milliseconds
  */
 export declare function sleep(config: SDKConfig, ms: number): Promise<void>;
+export declare function olakaiLoggger(message: string, level?: "info" | "warn" | "error"): void;
 //# sourceMappingURL=utils.d.ts.map

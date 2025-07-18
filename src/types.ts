@@ -94,6 +94,16 @@ export type APIResponse = {
   success: boolean;
   message?: string;
   errors?: string[];
+  // New batch response format fields
+  totalRequests?: number;
+  successCount?: number;
+  failureCount?: number;
+  results?: Array<{
+    index: number;
+    success: boolean;
+    promptRequestId: string | null;
+    error: string | null;
+  }>;
 };
 
 export type ControlPayload = {
