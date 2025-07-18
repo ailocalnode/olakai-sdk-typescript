@@ -1,5 +1,5 @@
 {
-  "name": "ts-sdk",
+  "name": "@olakai/sdk",
   "version": "1.0.0",
   "description": "This document demonstrates how to use the Olakai SDK with all its features.",
   "main": "dist/index.js",
