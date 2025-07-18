@@ -116,6 +116,9 @@ async function makeAPICall(payload) {
         if (config.verbose) {
             console.log("[Olakai SDK] API response:", response);
         }
+        if (response.status !== 200 && response.status !== 201 && config.debug) {
+            console.warn("[Olakai SDK] The prompt was not created successfully in the UNO product:", response);
+        }
         clearTimeout(timeoutId);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
