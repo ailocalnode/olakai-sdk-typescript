@@ -8,7 +8,7 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
-import { ConfigBuilder, sleep } from "./utils";
+import { ConfigBuilder, olakaiLoggger, sleep } from "./utils";
 import { StorageType } from "./types";
 
 const isBatchingEnabled = false;
@@ -36,6 +36,7 @@ function initOnlineDetection() {
     // Could be enhanced with network connectivity checks if needed
     isOnline = true;
   }
+  olakaiLoggger(`Online detection initialized. Status: ${isOnline}`, "info");
 }
 
 /**
@@ -75,9 +76,7 @@ export async function initClient(
   if (!config.apiKey || config.apiKey.trim() === "") {
     throw new Error("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
   }
-  if (config.verbose) {
-    console.log("[Olakai SDK] Config:", config);
-  }
+  olakaiLoggger(`Config: ${JSON.stringify(config)}`, "info");
   // Initialize online detection
   initOnlineDetection();
   
@@ -93,9 +92,7 @@ export async function initClient(
   };
 
   const queueManager = await initQueueManager(queueDependencies);
-  if (config.verbose) {
-    console.log("[Olakai SDK] Queue manager initialized successfully");
-  }
+  olakaiLoggger(`Queue manager initialized successfully`, "info");
 }
 
 /**
@@ -128,16 +125,15 @@ async function makeAPICall(
         "x-api-key": config.apiKey,
       },
       body: JSON.stringify(
-        Array.isArray(payload) ? payload : payload,
+        Array.isArray(payload) ? payload : [payload],
       ),
       signal: controller.signal,
     });
 
-    if (config.verbose) {
-      console.log("[Olakai SDK] API response:", response);
-    }
-    if(response.status !== 200 && response.status !== 201 && config.debug) {
-      console.warn("[Olakai SDK] The prompt was not created successfully in the UNO product:", response);
+    olakaiLoggger(`API response: ${JSON.stringify(response)}`, "info");
+
+    if(response.status !== 200 && response.status !== 201) {
+      olakaiLoggger(`The prompt was not created successfully in the UNO product: ${JSON.stringify(response)}`, "warn");
     }
 
     clearTimeout(timeoutId);
@@ -174,10 +170,7 @@ async function sendWithRetry(
       lastError = err as Error;
 
       if (config.debug) {
-        console.warn(
-          `[Olakai SDK] Attempt ${attempt + 1}/${maxRetries + 1} failed:`,
-          err,
-        );
+        olakaiLoggger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
       }
 
       if (attempt < maxRetries) {
@@ -191,10 +184,9 @@ async function sendWithRetry(
   if (config.onError && lastError) {
     config.onError(lastError);
   }
-
-  if (config.debug) {
-    console.error("[Olakai SDK] All retry attempts failed:", lastError);
-  }
+  
+  olakaiLoggger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
+  
 
   return false;
 }
@@ -218,10 +210,7 @@ export async function sendToAPI(
   } = {},
 ) {
   if (!config.apiKey) {
-    if (config.debug) {
-      console.warn("[Olakai SDK] API key is not set.");
-    }
-    return;
+    throw new Error("[Olakai SDK] API key is not set");
   }
 
   if (isBatchingEnabled) {
@@ -268,9 +257,7 @@ async function makeControlAPICall(
       signal: controller.signal,
     });
 
-    if (config.verbose) {
-      console.log("[Olakai SDK] Control API response:", response);
-    }
+    olakaiLoggger(`Control API response: ${JSON.stringify(response)}`, "info");
 
     clearTimeout(timeoutId);
 
