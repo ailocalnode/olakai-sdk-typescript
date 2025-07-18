@@ -92,13 +92,12 @@ export type BatchRequest = {
 
 export type APIResponse = {
   success: boolean;
-  message?: string;
-  errors?: string[];
+  message: string;
   // New batch response format fields
-  totalRequests?: number;
-  successCount?: number;
-  failureCount?: number;
-  results?: Array<{
+  totalRequests: number;
+  successCount: number;
+  failureCount: number;
+  results: Array<{
     index: number;
     success: boolean;
     promptRequestId: string | null;
@@ -115,3 +114,11 @@ export type ControlResponse = {
   reason?: string;
   metadata?: Record<string, any>;
 };
+
+export enum ErrorCode {
+  SUCCESS = 200,
+  PARTIAL_SUCCESS = 207,
+  FAILED = 500,
+  BAD_REQUEST = 400,
+
+}

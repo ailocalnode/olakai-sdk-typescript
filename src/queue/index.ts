@@ -1,4 +1,4 @@
-import type { BatchRequest, MonitorPayload, SDKConfig } from '../types';
+import type { APIResponse, BatchRequest, MonitorPayload, SDKConfig } from '../types';
 import { olakaiLoggger } from '../utils';
 import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from './storage/index';
 
@@ -8,7 +8,7 @@ import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from '
 export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
-  sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<{ success: boolean; response?: any; error?: Error }>;
+  sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
 }
 
 /**
@@ -17,6 +17,7 @@ export interface QueueDependencies {
 export class QueueManager {
   private batchQueue: BatchRequest[] = [];
   private batchTimer: NodeJS.Timeout | null = null;
+  private clearRetriesTimer: NodeJS.Timeout | null = null;
   private dependencies: QueueDependencies;
 
   constructor(dependencies: QueueDependencies) {
@@ -59,24 +60,63 @@ export class QueueManager {
       priority?: "low" | "normal" | "high";
     } = {}
   ): Promise<void> {
-    const batchItem: BatchRequest = {
+
+    if (this.batchQueue.length === 0) {
+      this.batchQueue.push({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        payload: [payload],
+        timestamp: Date.now(),
+        retries: options.retries || 0,
+        priority: options.priority || "normal",})
+    } else {
+      for (let index = this.batchQueue.length - 1; index >= 0; index--) {
+        if (this.batchQueue[index].payload.length < this.dependencies.config.batchSize && this.batchQueue[index].retries === (options.retries || 0)) {
+          this.batchQueue[index].payload.push(payload);
+          if (options.priority === "high") {
+            this.batchQueue[index].priority = "high";
+          }
+          this.persistQueue();
+          this.scheduleClearRetriesQueue();
+          if (options.priority === "high") {
+            await this.processBatchQueue();
+          } else {
+            this.scheduleClearRetriesQueue();
+            this.scheduleBatchProcessing();
+          }
+          return;
+        }
+      }
+    }
+
+    this.batchQueue.push({
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      payload,
+      payload: [payload],
       timestamp: Date.now(),
-      retries: 0,
-      priority: options.priority || "normal",
-    };
+      retries: options.retries || 0,
+      priority: options.priority || "normal",})
 
-    this.batchQueue.push(batchItem);
     this.persistQueue();
-
     // If queue is full or we're in immediate mode, process immediately
-    if (this.batchQueue.length >= this.dependencies.config.batchSize || options.priority === "high") {
+    if (options.priority === "high") {
       await this.processBatchQueue();
     } else {
       this.scheduleBatchProcessing();
     }
+    this.scheduleClearRetriesQueue();
   }
+  
+  /**
+   * Clear the retries queue
+   */
+  clearRetriesQueue(): void {
+    if (this.clearRetriesTimer) {
+      clearTimeout(this.clearRetriesTimer);
+      this.clearRetriesTimer = null;
+    }
+    this.batchQueue = this.batchQueue.filter(batch => batch.retries < this.dependencies.config.retries);
+    this.persistQueue();
+  }
+
 
   /**
    * Get the current queue size
@@ -144,21 +184,23 @@ export class QueueManager {
   }
 
   /**
-   * The core batching logic
-   * Sorts requests by priority (high → normal → low)
-   * Groups requests into batches of configurable size
-   * Sends batches to the API with retry logic
-   * Removes successfully sent items from the queue
-   * Schedules the next batch processing
+   * Schedule the clear retries queue
+   */
+private scheduleClearRetriesQueue(): void {
+  if (this.clearRetriesTimer) return;
+
+  this.clearRetriesTimer = setTimeout(() => {
+    this.clearRetriesQueue();
+  }, this.dependencies.config.batchTimeout);
+}
+  /**
+   * The core batching logic - simplified for easier maintenance
+   * Processes one batch at a time and handles partial failures
    */
   private async processBatchQueue(): Promise<void> {
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = null;
-    }
-
-    if (this.batchQueue.length === 0 || !this.dependencies.isOnline()) {
-      return;
     }
 
     // Sort by priority: high, normal, low
@@ -167,66 +209,64 @@ export class QueueManager {
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
 
-    // Process batches
-    const batches: BatchRequest[][] = [];
-    for (let i = 0; i < this.batchQueue.length; i += this.dependencies.config.batchSize) {
-      batches.push(this.batchQueue.slice(i, i + this.dependencies.config.batchSize));
-    }
-
-    const successfulBatches: Set<number> = new Set();
-
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
-      const payloads = batch.map((item) => item.payload);
-
-      try {
-        const result = await this.dependencies.sendWithRetry(payloads);
-        if (result.success) {
-          successfulBatches.add(batchIndex);
-          
-          // Log detailed batch results if available
-          if (result.response?.totalRequests && result.response?.successCount !== undefined) {
-            const { totalRequests, successCount, failureCount } = result.response;
-            olakaiLoggger(`Batch sent: ${successCount}/${totalRequests} requests succeeded`, "info");
-            
-            // If we have partial failures, we might want to handle failed items differently in the future
-            if (failureCount && failureCount > 0) {
-              olakaiLoggger(`Batch ${batchIndex} had ${failureCount} failed requests`, "warn");
-            }
-          } else {
-            olakaiLoggger(`Successfully sent batch of ${batch.length} items`, "info");
-          }
-        } else {
-          olakaiLoggger(`Batch ${batchIndex} failed: ${JSON.stringify(result.error)}`, "warn");
-        }
-      } catch (err) {
-        if (this.dependencies.config.debug) {
-          console.error(`[Olakai SDK] Batch ${batchIndex} failed with exception:`, err);
-        }
-      }
-    }
-
-    // Remove successfully sent items from queue
-    let removeCount = 0;
-    for (let i = 0; i < batches.length; i++) {
-      if (successfulBatches.has(i)) {
-        removeCount += batches[i].length;
-      } else {
-        break; // Stop at first failed batch to maintain order
-      }
-    }
-
-    if (removeCount > 0) {
-      this.batchQueue.splice(0, removeCount);
-      this.persistQueue();
-    }
-
-    // Schedule next processing if there are still items
-    if (this.batchQueue.length > 0) {
+    // Process one batch at a time
+    const currentBatch = this.batchQueue.shift();
+    if (!currentBatch) {
       this.scheduleBatchProcessing();
+      return;
+    }
+
+
+    const payloads = currentBatch.payload;
+
+    if (payloads.length === 0) {
+      this.scheduleBatchProcessing();
+      return;
+    }
+
+    try {
+      const result = await this.dependencies.sendWithRetry(payloads);
+      
+      if (result.success) {
+        // All succeeded (no detailed results)
+        olakaiLoggger(`Batch of ${currentBatch.payload.length} items sent successfully`, "info");
+        return;
+      } else {
+        // Can be partial success failure
+        const newBatch: BatchRequest = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          payload: [],
+          timestamp: Date.now(),
+          retries: currentBatch.retries + 1,
+          priority: currentBatch.priority,
+        }
+        for (const resul of result.results) {
+          if (!resul.success) {
+            this.batchQueue.push({
+              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              payload: [payloads[resul.index]],
+              timestamp: Date.now(),
+              retries: 0,
+              priority: currentBatch.priority,
+            })
+          }
+        }
+        this.batchQueue.push(newBatch);
+        this.persistQueue();
+        this.scheduleBatchProcessing();
+        return;
+      }
+    } catch (err) {
+      olakaiLoggger(`Batch processing failed: ${JSON.stringify(err)}`, "error");
+      for (const payload of payloads) {
+        this.addToQueue(payload, {retries: currentBatch.retries + 1, priority: currentBatch.priority});
+      }
+      this.scheduleBatchProcessing();
+      return; 
     }
   }
 }
+
 
 // Global queue manager instance
 let queueManager: QueueManager | null = null;

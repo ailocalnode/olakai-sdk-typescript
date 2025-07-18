@@ -9,7 +9,7 @@ import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLoggger, sleep } from "./utils";
-import { StorageType } from "./types";
+import { StorageType, ErrorCode } from "./types";
 
 const isBatchingEnabled = false;
 
@@ -56,7 +56,7 @@ export async function initClient(
   configBuilder.domainUrl(`${domainUrl}/api/monitoring/prompt`);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
-  configBuilder.retries(options.retries || 3);
+  configBuilder.retries(options.retries || 4);
   configBuilder.timeout(options.timeout || 20000);
   configBuilder.enableStorage(options.enableStorage || true);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
@@ -128,28 +128,28 @@ async function makeAPICall(
         Array.isArray(payload) ? payload : [payload],
       ),
       signal: controller.signal,
-    });
+    }) as Response & { response: APIResponse };
 
     olakaiLoggger(`API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
     // Handle different status codes for batch operations
-    if (response.status === 201) {
+    if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      const result = await response.json() as Record<string, any>;
+      const result = response.response;
       olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
-      return { success: true, ...result };
+      return result;
 
-    } else if (response.status === 207) {
+    } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
       // Mixed success/failure (Multi-Status)
-      const result = await response.json() as Record<string, any>;
+      const result = response.response;
       olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
-      return { success: true, ...result }; // Note: overall success=true even for partial failures
+      return result; // Note: overall success=true even for partial failures
 
-    } else if (response.status === 500) {
+    } else if (response.status === ErrorCode.FAILED) {
       // All failed or system error
-      const result = await response.json() as Record<string, any>;
+      const result = await response.json();
       olakaiLoggger(`All batch requests failed: ${JSON.stringify(result)}`, "error");
       throw new Error(`Batch processing failed: ${result.message || response.statusText}`);
 
@@ -160,8 +160,8 @@ async function makeAPICall(
       
     } else {
       // Legacy support for other 2xx status codes
-      const result = await response.json() as Record<string, any>;
-      return { success: true, ...result };
+      const result = response.response;
+      return result;
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -178,22 +178,21 @@ async function makeAPICall(
 async function sendWithRetry(
   payload: MonitorPayload | MonitorPayload[],
   maxRetries: number = config.retries!,
-): Promise<{ success: boolean; response?: APIResponse; error?: Error }> {
+): Promise<APIResponse> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await makeAPICall(payload);
+      if (response.success) {
+        return response;
+      } else if (response.failureCount && response.failureCount > 0) {
+          olakaiLoggger(
+            `Batch partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
+            "info");
+            return response;
+        }
       
-      // For batch operations, check if we have partial failures
-      if (response.totalRequests && response.failureCount && response.failureCount > 0) {
-        olakaiLoggger(
-          `Batch partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
-          "info"
-        );
-      }
-      
-      return { success: true, response };
     } catch (err) {
       lastError = err as Error;
 
@@ -212,8 +211,7 @@ async function sendWithRetry(
   }
   
   olakaiLoggger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
-  
-  return { success: false, error: lastError || new Error("Unknown error") };
+  throw lastError;
 }
 
 /**
