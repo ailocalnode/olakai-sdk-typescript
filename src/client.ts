@@ -130,7 +130,7 @@ async function makeAPICall(
       body: JSON.stringify(payload),
 
       signal: controller.signal,
-    }) as Response & { response: string };
+    }) as APIResponse;
 
     olakaiLoggger(`API response status: ${response.status}`, "info");
 
@@ -139,21 +139,18 @@ async function makeAPICall(
     // Handle different status codes for batch operations
     if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      const result = JSON.parse(response.response) as APIResponse;
-      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
-      return result;
+      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(response)}`, "info");
+      return response;
 
     } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
       // Mixed success/failure (Multi-Status)
-      const result = JSON.parse(response.response) as APIResponse;
-      olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
-      return result; // Note: overall success=true even for partial failures
+      olakaiLoggger(`Batch requests had mixed results: ${response.successCount}/${response.totalRequests} succeeded`, "warn");
+      return response; // Note: overall success=true even for partial failures
 
     } else if (response.status === ErrorCode.FAILED) {
       // All failed or system error
-      const result = await response.json();
-      olakaiLoggger(`All batch requests failed: ${JSON.stringify(result)}`, "error");
-      throw new Error(`Batch processing failed: ${result.message || response.statusText}`);
+      olakaiLoggger(`All batch requests failed: ${JSON.stringify(response)}`, "error");
+      throw new Error(`Batch processing failed: ${response.message || response.statusText}`);
 
     } else if (!response.ok) {
       // Other error status codes
@@ -163,8 +160,7 @@ async function makeAPICall(
       
     } else {
       // Legacy support for other 2xx status codes
-      const result = JSON.parse(response.response) as APIResponse;
-      return result;
+      return response;
     }
   } catch (err) {
     clearTimeout(timeoutId);

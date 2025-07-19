@@ -90,7 +90,7 @@ export type BatchRequest = {
   priority: "low" | "normal" | "high";
 };
 
-export type APIResponse = {
+export type APIResponse = Response & {
   success: boolean;
   message: string;
   // New batch response format fields
