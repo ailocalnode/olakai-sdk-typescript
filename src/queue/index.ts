@@ -9,6 +9,7 @@ export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
   sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
+
 }
 
 /**

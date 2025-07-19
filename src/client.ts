@@ -128,6 +128,7 @@ async function makeAPICall(
         "x-api-key": config.apiKey,
       },
       body: JSON.stringify(payload),
+
       signal: controller.signal,
     }) as Response & { response: APIResponse };
 
@@ -242,6 +243,7 @@ export async function sendToAPI(
   } else {
     // For non-batching mode, use makeAPICall directly and handle the response
     const response = await makeAPICall([payload]);
+
     
     // Log any batch-style response information if present
     if (response.totalRequests && response.successCount !== undefined) {
