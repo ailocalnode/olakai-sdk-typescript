@@ -139,7 +139,7 @@ function resolveIdentifiers<TArgs extends any[]>(
   args: TArgs,
 ): { chatId: string; email: string } {
   let chatId = "123";
-  let email = "anonymous";
+  let email = "anonymous@olakai.ai";
   if (typeof options.chatId === "function") {
     try {
       chatId = options.chatId(args);
@@ -158,7 +158,7 @@ function resolveIdentifiers<TArgs extends any[]>(
       olakaiLoggger(`Error during userId resolution: ${error}. \n Continuing execution...`, "error");
     }
   } else {
-    email = options.email || "anonymous";
+    email = options.email || "anonymous@olakai.ai";
   }
     
   return { chatId, email };

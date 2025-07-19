@@ -90,7 +90,7 @@ export type BatchRequest = {
   priority: "low" | "normal" | "high";
 };
 
-export type APIResponse = {
+export type APIResponse = Response & {
   success: boolean;
   message: string;
   // New batch response format fields
@@ -116,7 +116,7 @@ export type ControlResponse = {
 };
 
 export enum ErrorCode {
-  SUCCESS = 200,
+  SUCCESS = 201,
   PARTIAL_SUCCESS = 207,
   FAILED = 500,
   BAD_REQUEST = 400,

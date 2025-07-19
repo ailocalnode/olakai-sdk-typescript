@@ -13,7 +13,7 @@ export const capture = {
    * Capture everything - both full input and output
    */
   all: <TArgs extends any[], TResult>(options?: { 
-    userId?: string | ((args: TArgs) => string),
+    email?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
     subTask?: string
@@ -29,7 +29,7 @@ export const capture = {
    * Capture only the input/arguments
    */
   input: <TArgs extends any[], TResult>(options?: { 
-    userId?: string | ((args: TArgs) => string),
+    email?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
     subTask?: string,
@@ -46,7 +46,7 @@ export const capture = {
    * Capture only the output/result
    */
   output: <TArgs extends any[], TResult>(options?: { 
-    userId?: string | ((args: TArgs) => string),
+    email?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
     subTask?: string,
@@ -65,7 +65,7 @@ export const capture = {
   custom: <TArgs extends any[], TResult>(config: {
     input: (args: TArgs) => any,
     output: (result: TResult) => any,
-    userId?: string | ((args: TArgs) => string),
+    email?: string | ((args: TArgs) => string),
     chatId?: string | ((args: TArgs) => string),
     task?: string,
     subTask?: string,
@@ -75,7 +75,7 @@ export const capture = {
       input: config.input(args),
       output: config.output(result),
     }),
-    userId: config.userId,
+    email: config.email,
     chatId: config.chatId,
     task: config.task,
     subTask: config.subTask,
@@ -89,7 +89,7 @@ export const capture = {
 export function olakaiMonitor<T extends (...args: any[]) => any>(
   fn: T,
   options?: {
-    userId?: string | ((args: Parameters<T>) => string),
+    email?: string | ((args: Parameters<T>) => string),
     chatId?: string | ((args: Parameters<T>) => string),
     task?: string,
     subTask?: string,
