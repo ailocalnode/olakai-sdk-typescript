@@ -130,7 +130,7 @@ async function makeAPICall(
       body: JSON.stringify(payload),
 
       signal: controller.signal,
-    }) as Response & { response: APIResponse };
+    }) as Response & { response: string };
 
     olakaiLoggger(`API response status: ${response.status}`, "info");
 
@@ -139,13 +139,13 @@ async function makeAPICall(
     // Handle different status codes for batch operations
     if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      const result = response.response;
+      const result = JSON.parse(response.response) as APIResponse;
       olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
       return result;
 
     } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
       // Mixed success/failure (Multi-Status)
-      const result = response.response;
+      const result = JSON.parse(response.response) as APIResponse;
       olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
       return result; // Note: overall success=true even for partial failures
 
@@ -163,7 +163,7 @@ async function makeAPICall(
       
     } else {
       // Legacy support for other 2xx status codes
-      const result = response.response;
+      const result = JSON.parse(response.response) as APIResponse;
       return result;
     }
   } catch (err) {
@@ -247,7 +247,7 @@ export async function sendToAPI(
 
     
     // Log any batch-style response information if present
-    if (response.totalRequests && response.successCount !== undefined) {
+    if (response.totalRequests !== undefined && response.successCount !== undefined) {
       olakaiLoggger(
         `Direct API call result: ${response.successCount}/${response.totalRequests} requests succeeded`,
         response.failureCount && response.failureCount > 0 ? "warn" : "info"

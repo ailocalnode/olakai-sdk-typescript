@@ -116,7 +116,7 @@ export type ControlResponse = {
 };
 
 export enum ErrorCode {
-  SUCCESS = 200,
+  SUCCESS = 201,
   PARTIAL_SUCCESS = 207,
   FAILED = 500,
   BAD_REQUEST = 400,
