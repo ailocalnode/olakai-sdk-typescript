@@ -1,5 +1,5 @@
 export type MonitorPayload = {
-    userId?: string;
+    email?: string;
     chatId?: string;
     shouldScore?: boolean;
     task?: string;
@@ -43,7 +43,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
         output: any;
     };
     chatId?: string | ((args: TArgs) => string);
-    userId?: string | ((args: TArgs) => string);
+    email?: string | ((args: TArgs) => string);
     sanitize?: boolean;
     priority?: "low" | "normal" | "high";
     control?: ControlOptions<TArgs>;
@@ -78,19 +78,18 @@ export type SDKConfig = {
 };
 export type BatchRequest = {
     id: string;
-    payload: MonitorPayload;
+    payload: MonitorPayload[];
     timestamp: number;
     retries: number;
     priority: "low" | "normal" | "high";
 };
 export type APIResponse = {
     success: boolean;
-    message?: string;
-    errors?: string[];
-    totalRequests?: number;
-    successCount?: number;
-    failureCount?: number;
-    results?: Array<{
+    message: string;
+    totalRequests: number;
+    successCount: number;
+    failureCount: number;
+    results: Array<{
         index: number;
         success: boolean;
         promptRequestId: string | null;
@@ -105,4 +104,10 @@ export type ControlResponse = {
     reason?: string;
     metadata?: Record<string, any>;
 };
+export declare enum ErrorCode {
+    SUCCESS = 200,
+    PARTIAL_SUCCESS = 207,
+    FAILED = 500,
+    BAD_REQUEST = 400
+}
 //# sourceMappingURL=types.d.ts.map

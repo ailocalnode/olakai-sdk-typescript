@@ -1,15 +1,11 @@
-import type { MonitorPayload, SDKConfig } from '../types';
+import type { APIResponse, MonitorPayload, SDKConfig } from '../types';
 /**
  * Dependencies that the queue manager needs from the client
  */
 export interface QueueDependencies {
     config: SDKConfig;
     isOnline: () => boolean;
-    sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<{
-        success: boolean;
-        response?: any;
-        error?: Error;
-    }>;
+    sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
 }
 /**
  * Queue Manager - Handles all queue operations and state
@@ -17,6 +13,7 @@ export interface QueueDependencies {
 export declare class QueueManager {
     private batchQueue;
     private batchTimer;
+    private clearRetriesTimer;
     private dependencies;
     constructor(dependencies: QueueDependencies);
     /**
@@ -31,6 +28,10 @@ export declare class QueueManager {
         timeout?: number;
         priority?: "low" | "normal" | "high";
     }): Promise<void>;
+    /**
+     * Clear the retries queue
+     */
+    clearRetriesQueue(): void;
     /**
      * Get the current queue size
      */
@@ -52,12 +53,12 @@ export declare class QueueManager {
      */
     private scheduleBatchProcessing;
     /**
-     * The core batching logic
-     * Sorts requests by priority (high → normal → low)
-     * Groups requests into batches of configurable size
-     * Sends batches to the API with retry logic
-     * Removes successfully sent items from the queue
-     * Schedules the next batch processing
+     * Schedule the clear retries queue
+     */
+    private scheduleClearRetriesQueue;
+    /**
+     * The core batching logic - simplified for easier maintenance
+     * Processes one batch at a time and handles partial failures
      */
     private processBatchQueue;
 }

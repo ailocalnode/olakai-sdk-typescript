@@ -7,6 +7,7 @@ exports.getQueueSize = getQueueSize;
 exports.clearQueue = clearQueue;
 exports.flushQueue = flushQueue;
 exports.addToQueue = addToQueue;
+const utils_1 = require("../utils");
 const index_1 = require("./storage/index");
 /**
  * Queue Manager - Handles all queue operations and state
@@ -14,6 +15,7 @@ const index_1 = require("./storage/index");
 class QueueManager {
     batchQueue = [];
     batchTimer = null;
+    clearRetriesTimer = null;
     dependencies;
     constructor(dependencies) {
         this.dependencies = dependencies;
@@ -29,22 +31,16 @@ class QueueManager {
                 if (stored) {
                     const parsedQueue = JSON.parse(stored);
                     this.batchQueue.push(...parsedQueue);
-                    if (this.dependencies.config.debug) {
-                        console.log(`[Olakai SDK] Loaded ${parsedQueue.length} items from storage`);
-                    }
+                    (0, utils_1.olakaiLoggger)(`Loaded ${parsedQueue.length} items from storage`, "info");
                 }
             }
             catch (err) {
-                if (this.dependencies.config.debug) {
-                    console.warn("[Olakai SDK] Failed to load from storage:", err);
-                }
+                (0, utils_1.olakaiLoggger)(`Failed to load from storage: ${JSON.stringify(err)}`, "warn");
             }
         }
         // Start processing queue if we have items and we're online
         if (this.batchQueue.length > 0 && this.dependencies.isOnline()) {
-            if (this.dependencies.config.verbose) {
-                console.log("[Olakai SDK] Starting batch processing");
-            }
+            (0, utils_1.olakaiLoggger)(`Starting batch processing`, "info");
             await this.processBatchQueue();
         }
     }
@@ -52,22 +48,61 @@ class QueueManager {
      * Add an item to the queue
      */
     async addToQueue(payload, options = {}) {
-        const batchItem = {
+        if (this.batchQueue.length === 0) {
+            this.batchQueue.push({
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                payload: [payload],
+                timestamp: Date.now(),
+                retries: options.retries || 0,
+                priority: options.priority || "normal",
+            });
+        }
+        else {
+            for (let index = this.batchQueue.length - 1; index >= 0; index--) {
+                if (this.batchQueue[index].payload.length < this.dependencies.config.batchSize && this.batchQueue[index].retries === (options.retries || 0)) {
+                    this.batchQueue[index].payload.push(payload);
+                    if (options.priority === "high") {
+                        this.batchQueue[index].priority = "high";
+                    }
+                    this.persistQueue();
+                    if (options.priority === "high") {
+                        await this.processBatchQueue();
+                    }
+                    else {
+                        this.scheduleBatchProcessing();
+                    }
+                    this.scheduleClearRetriesQueue();
+                    return;
+                }
+            }
+        }
+        this.batchQueue.push({
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            payload,
+            payload: [payload],
             timestamp: Date.now(),
-            retries: 0,
+            retries: options.retries || 0,
             priority: options.priority || "normal",
-        };
-        this.batchQueue.push(batchItem);
+        });
         this.persistQueue();
         // If queue is full or we're in immediate mode, process immediately
-        if (this.batchQueue.length >= this.dependencies.config.batchSize || options.priority === "high") {
+        if (options.priority === "high") {
             await this.processBatchQueue();
         }
         else {
             this.scheduleBatchProcessing();
         }
+        this.scheduleClearRetriesQueue();
+    }
+    /**
+     * Clear the retries queue
+     */
+    clearRetriesQueue() {
+        if (this.clearRetriesTimer) {
+            clearTimeout(this.clearRetriesTimer);
+            this.clearRetriesTimer = null;
+        }
+        this.batchQueue = this.batchQueue.filter(batch => batch.retries < this.dependencies.config.retries);
+        this.persistQueue();
     }
     /**
      * Get the current queue size
@@ -83,18 +118,14 @@ class QueueManager {
         if ((0, index_1.isStorageEnabled)(this.dependencies.config)) {
             const storage = (0, index_1.getStorage)();
             storage.removeItem((0, index_1.getStorageKey)(this.dependencies.config));
-            if (this.dependencies.config.verbose) {
-                console.log("[Olakai SDK] Cleared queue from storage");
-            }
+            (0, utils_1.olakaiLoggger)(`Cleared queue from storage`, "info");
         }
     }
     /**
      * Flush the queue (send all pending items)
      */
     async flush() {
-        if (this.dependencies.config.verbose) {
-            console.log("[Olakai SDK] Flushing queue");
-        }
+        (0, utils_1.olakaiLoggger)(`Flushing queue`, "info");
         await this.processBatchQueue();
     }
     /**
@@ -116,14 +147,10 @@ class QueueManager {
                 }
             }
             storage.setItem((0, index_1.getStorageKey)(this.dependencies.config), JSON.stringify(this.batchQueue));
-            if (this.dependencies.config.verbose) {
-                console.log("[Olakai SDK] Persisted queue to storage");
-            }
+            (0, utils_1.olakaiLoggger)(`Persisted queue to storage`, "info");
         }
         catch (err) {
-            if (this.dependencies.config.debug) {
-                console.warn("[Olakai SDK] Failed to persist queue:", err);
-            }
+            (0, utils_1.olakaiLoggger)(`Failed to persist queue: ${JSON.stringify(err)}`, "warn");
         }
     }
     /**
@@ -137,83 +164,74 @@ class QueueManager {
         }, this.dependencies.config.batchTimeout);
     }
     /**
-     * The core batching logic
-     * Sorts requests by priority (high → normal → low)
-     * Groups requests into batches of configurable size
-     * Sends batches to the API with retry logic
-     * Removes successfully sent items from the queue
-     * Schedules the next batch processing
+     * Schedule the clear retries queue
+     */
+    scheduleClearRetriesQueue() {
+        if (this.clearRetriesTimer)
+            return;
+        this.clearRetriesTimer = setTimeout(() => {
+            this.clearRetriesQueue();
+        }, this.dependencies.config.batchTimeout);
+    }
+    /**
+     * The core batching logic - simplified for easier maintenance
+     * Processes one batch at a time and handles partial failures
      */
     async processBatchQueue() {
         if (this.batchTimer) {
             clearTimeout(this.batchTimer);
             this.batchTimer = null;
         }
-        if (this.batchQueue.length === 0 || !this.dependencies.isOnline()) {
-            return;
-        }
         // Sort by priority: high, normal, low
         this.batchQueue.sort((a, b) => {
             const priorityOrder = { high: 0, normal: 1, low: 2 };
             return priorityOrder[a.priority] - priorityOrder[b.priority];
         });
-        // Process batches
-        const batches = [];
-        for (let i = 0; i < this.batchQueue.length; i += this.dependencies.config.batchSize) {
-            batches.push(this.batchQueue.slice(i, i + this.dependencies.config.batchSize));
+        // Process one batch at a time
+        const currentBatch = this.batchQueue.shift();
+        if (!currentBatch) {
+            this.scheduleBatchProcessing();
+            return;
         }
-        const successfulBatches = new Set();
-        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-            const batch = batches[batchIndex];
-            const payloads = batch.map((item) => item.payload);
-            try {
-                const result = await this.dependencies.sendWithRetry(payloads);
-                if (result.success) {
-                    successfulBatches.add(batchIndex);
-                    // Log detailed batch results if available
-                    if (result.response?.totalRequests && result.response?.successCount !== undefined) {
-                        const { totalRequests, successCount, failureCount } = result.response;
-                        if (this.dependencies.config.verbose) {
-                            console.log(`[Olakai SDK] Batch sent: ${successCount}/${totalRequests} requests succeeded`);
-                        }
-                        // If we have partial failures, we might want to handle failed items differently in the future
-                        if (failureCount && failureCount > 0) {
-                            console.warn(`[Olakai SDK] Batch ${batchIndex} had ${failureCount} failed requests`);
-                        }
-                    }
-                    else if (this.dependencies.config.verbose) {
-                        console.log(`[Olakai SDK] Successfully sent batch of ${batch.length} items`);
-                    }
-                }
-                else {
-                    if (this.dependencies.config.debug) {
-                        console.error(`[Olakai SDK] Batch ${batchIndex} failed:`, result.error);
-                    }
-                }
-            }
-            catch (err) {
-                if (this.dependencies.config.debug) {
-                    console.error(`[Olakai SDK] Batch ${batchIndex} failed with exception:`, err);
-                }
-            }
+        const payloads = currentBatch.payload;
+        if (payloads.length === 0) {
+            this.scheduleBatchProcessing();
+            return;
         }
-        // Remove successfully sent items from queue
-        let removeCount = 0;
-        for (let i = 0; i < batches.length; i++) {
-            if (successfulBatches.has(i)) {
-                removeCount += batches[i].length;
+        try {
+            const result = await this.dependencies.sendWithRetry(payloads);
+            if (result.success) {
+                // All succeeded (no detailed results)
+                (0, utils_1.olakaiLoggger)(`Batch of ${currentBatch.payload.length} items sent successfully`, "info");
+                return;
             }
             else {
-                break; // Stop at first failed batch to maintain order
+                // Can be partial success failure
+                const newBatch = {
+                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    payload: [],
+                    timestamp: Date.now(),
+                    retries: currentBatch.retries + 1,
+                    priority: currentBatch.priority,
+                };
+                for (const resul of result.results) {
+                    if (!resul.success) {
+                        newBatch.payload.push(payloads[resul.index]);
+                    }
+                }
+                this.batchQueue.push(newBatch);
+                this.persistQueue();
+                this.scheduleBatchProcessing();
+                return;
             }
         }
-        if (removeCount > 0) {
-            this.batchQueue.splice(0, removeCount);
-            this.persistQueue();
-        }
-        // Schedule next processing if there are still items
-        if (this.batchQueue.length > 0) {
+        catch (err) {
+            (0, utils_1.olakaiLoggger)(`Batch processing failed: ${JSON.stringify(err)}`, "error");
+            for (const payload of payloads) {
+                this.addToQueue(payload, { retries: currentBatch.retries + 1, priority: currentBatch.priority });
+            }
             this.scheduleBatchProcessing();
+            return;
         }
     }
 }
@@ -225,15 +243,11 @@ let queueManager = null;
  */
 async function initQueueManager(dependencies) {
     if (queueManager) {
-        if (dependencies.config.debug) {
-            console.warn('[Olakai SDK] Queue manager already initialized, replacing with new instance');
-        }
+        (0, utils_1.olakaiLoggger)(`Queue manager already initialized, replacing with new instance`, "warn");
     }
     queueManager = new QueueManager(dependencies);
     await queueManager.initialize();
-    if (dependencies.config.verbose) {
-        console.log('[Olakai SDK] Queue manager initialized with', queueManager.getSize(), 'items in queue');
-    }
+    (0, utils_1.olakaiLoggger)(`Queue manager initialized with ${queueManager.getSize()} items in queue`, "info");
     return queueManager;
 }
 /**

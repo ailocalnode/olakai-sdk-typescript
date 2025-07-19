@@ -107,58 +107,39 @@ function createErrorInfo(error) {
     };
 }
 /**
- * Safely execute monitoring operations without affecting the original function
- * @param operation - The monitoring operation to execute
- * @param context - Context information for debugging
- */
-function safeMonitoringOperation(operation, context) {
-    try {
-        const result = operation();
-        // Handle both sync and async operations
-        if (result && typeof result.catch === "function") {
-            result.catch((error) => {
-                const config = (0, client_1.getConfig)();
-                (0, utils_1.olakaiLoggger)(`Monitoring operation failed (${context}): ${JSON.stringify(error)}`, "warn");
-                // Call global error handler if configured
-                if (config.onError) {
-                    try {
-                        config.onError(error);
-                    }
-                    catch (handlerError) {
-                        (0, utils_1.olakaiLoggger)(`Error handler itself failed: ${JSON.stringify(handlerError)}`, "warn");
-                    }
-                }
-            });
-        }
-    }
-    catch (error) {
-        const config = (0, client_1.getConfig)();
-        (0, utils_1.olakaiLoggger)(`Monitoring operation failed (${context}): ${JSON.stringify(error)}`, "warn");
-        // Call global error handler if configured
-        if (config.onError) {
-            try {
-                config.onError(error);
-            }
-            catch (handlerError) {
-                (0, utils_1.olakaiLoggger)(`Error handler itself failed: ${JSON.stringify(handlerError)}`, "warn");
-            }
-        }
-    }
-}
-/**
  * Resolve dynamic chatId and userId from options
  * @param options - Monitor options
  * @param args - Function arguments
  * @returns Object with resolved chatId and userId
  */
 function resolveIdentifiers(options, args) {
-    const chatId = typeof options.chatId === "function"
-        ? options.chatId(args)
-        : options.chatId || "123";
-    const userId = typeof options.userId === "function"
-        ? options.userId(args)
-        : options.userId || "anonymous";
-    return { chatId, userId };
+    let chatId = "123";
+    let email = "anonymous";
+    if (typeof options.chatId === "function") {
+        try {
+            chatId = options.chatId(args);
+            (0, utils_1.olakaiLoggger)("ChatId resolved...", "info");
+        }
+        catch (error) {
+            (0, utils_1.olakaiLoggger)(`Error during chatId resolution: ${error}. \n Continuing execution...`, "error");
+        }
+    }
+    else {
+        chatId = options.chatId || "123";
+    }
+    if (typeof options.email === "function") {
+        try {
+            email = options.email(args);
+            (0, utils_1.olakaiLoggger)("Email resolved...", "info");
+        }
+        catch (error) {
+            (0, utils_1.olakaiLoggger)(`Error during userId resolution: ${error}. \n Continuing execution...`, "error");
+        }
+    }
+    else {
+        email = options.email || "anonymous";
+    }
+    return { chatId, email };
 }
 // Implementation
 function monitor(arg1, arg2) {
@@ -172,7 +153,9 @@ function monitor(arg1, arg2) {
     const options = arg1;
     return (fn) => {
         return async (...args) => {
-            //========== Initialize monitoring data
+            (0, utils_1.olakaiLoggger)(`Monitoring function: ${fn.name}`, "info");
+            (0, utils_1.olakaiLoggger)(`Monitoring options: ${JSON.stringify(options)}`, "info");
+            (0, utils_1.olakaiLoggger)(`Monitoring arguments: ${JSON.stringify(args)}`, "info");
             let config;
             let start;
             let processedArgs = args;
@@ -182,14 +165,12 @@ function monitor(arg1, arg2) {
                 start = Date.now();
             }
             catch (error) {
-                safeMonitoringOperation(() => {
-                    throw error;
-                }, "monitoring initialization");
+                (0, utils_1.olakaiLoggger)(`Monitoring initialization failed: \n${error}`, "error");
                 // If monitoring setup fails, still execute the function
-                return fn(...args);
+                return await fn(...args);
             }
-            //========== End of monitoring initialization
-            //========== Check if we should control this call
+            (0, utils_1.olakaiLoggger)("Monitoring initialization completed...", "info");
+            (0, utils_1.olakaiLoggger)("Checking if we should control this call...", "info");
             let shouldControlCall = false;
             try {
                 shouldControlCall = await shouldControl(options, args);
@@ -199,15 +180,15 @@ function monitor(arg1, arg2) {
                 // We should re-throw this error to prevent function execution
                 throw error;
             }
-            //========== End of shouldControl check
-            //========== If we should control (block execution), return early
+            (0, utils_1.olakaiLoggger)("Should control check completed...", "info");
+            //If we should control (block execution), return early
             if (shouldControlCall) {
                 // This should not happen in normal flow as shouldControl throws on block
                 // But kept for safety
                 throw new Error("Function execution blocked by control logic");
             }
-            // Safely apply beforeCall middleware
-            safeMonitoringOperation(async () => {
+            (0, utils_1.olakaiLoggger)("Applying beforeCall middleware...", "info");
+            try {
                 for (const middleware of middlewares) {
                     if (middleware.beforeCall) {
                         const result = await middleware.beforeCall(processedArgs);
@@ -216,97 +197,119 @@ function monitor(arg1, arg2) {
                         }
                     }
                 }
-            }, "beforeCall middleware");
-            let result;
-            let functionError = null;
-            // ALWAYS execute the original function - this is the critical part
-            try {
-                result = await fn(...processedArgs);
             }
             catch (error) {
-                functionError = error;
-                throw error; // Re-throw the original error
+                (0, utils_1.olakaiLoggger)(`BeforeCall middleware failed: ${error}. \n Continuing execution...`, "error");
             }
-            finally {
-                // Monitoring operations in finally block - they happen regardless of success/failure
-                if (functionError) {
-                    // Handle error case monitoring
-                    safeMonitoringOperation(async () => {
-                        // Apply error middleware
-                        for (const middleware of middlewares) {
-                            if (middleware.onError) {
-                                await middleware.onError(functionError, processedArgs);
-                            }
+            (0, utils_1.olakaiLoggger)("BeforeCall middleware completed...", "info");
+            let result;
+            let functionError = null;
+            (0, utils_1.olakaiLoggger)("Executing the original function...", "info");
+            try {
+                result = await fn(...processedArgs);
+                (0, utils_1.olakaiLoggger)("Original function executed successfully...", "info");
+            }
+            catch (error) {
+                (0, utils_1.olakaiLoggger)(`Original function failed: ${error}. \n Continuing execution...`, "error");
+                functionError = error;
+                // Handle error case monitoring
+                try {
+                    // Apply error middleware
+                    for (const middleware of middlewares) {
+                        if (middleware.onError) {
+                            await middleware.onError(functionError, processedArgs);
                         }
-                        // Capture error data if onError handler is provided
-                        if (options.onError) {
-                            const errorResult = options.onError(functionError, processedArgs);
-                            const errorInfo = createErrorInfo(functionError);
-                            const { chatId, userId } = resolveIdentifiers(options, args);
-                            const payload = {
-                                prompt: "",
-                                response: "",
-                                errorMessage: (0, utils_1.toApiString)(errorInfo.errorMessage) +
-                                    (0, utils_1.toApiString)(errorResult),
-                                chatId: (0, utils_1.toApiString)(chatId),
-                                userId: (0, utils_1.toApiString)(userId),
-                            };
-                            await (0, client_1.sendToAPI)(payload, {
-                                retries: config.retries,
-                                timeout: config.timeout,
-                                priority: "high", // Errors always get high priority
-                            });
-                        }
-                    }, "error monitoring");
-                }
-                else {
-                    // Handle success case monitoring
-                    safeMonitoringOperation(async () => {
-                        // Apply afterCall middleware
-                        for (const middleware of middlewares) {
-                            if (middleware.afterCall) {
-                                const middlewareResult = await middleware.afterCall(result, processedArgs);
-                                if (middlewareResult) {
-                                    result = middlewareResult;
-                                }
-                            }
-                        }
-                        // Capture success data
-                        const captureResult = options.capture({
-                            args: processedArgs,
-                            result,
-                        });
-                        const prompt = options.sanitize
-                            ? sanitizeData(captureResult.input, config.sanitizePatterns)
-                            : captureResult.input;
-                        const response = options.sanitize
-                            ? sanitizeData(captureResult.output, config.sanitizePatterns)
-                            : captureResult.output;
-                        const { chatId, userId } = resolveIdentifiers(options, args);
+                    }
+                    // Capture error data if onError handler is provided
+                    if (options.onError) {
+                        const errorResult = options.onError(functionError, processedArgs);
+                        const errorInfo = createErrorInfo(functionError);
+                        const { chatId, email } = resolveIdentifiers(options, args);
                         const payload = {
-                            prompt: (0, utils_1.toApiString)(prompt),
-                            response: (0, utils_1.toApiString)(response),
+                            prompt: "",
+                            response: "",
+                            errorMessage: (0, utils_1.toApiString)(errorInfo.errorMessage) +
+                                (0, utils_1.toApiString)(errorResult),
                             chatId: (0, utils_1.toApiString)(chatId),
-                            userId: (0, utils_1.toApiString)(userId),
-                            tokens: 0,
-                            requestTime: Number(Date.now() - start),
-                            ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
-                            ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
-                            ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
+                            email: (0, utils_1.toApiString)(email),
                         };
-                        (0, utils_1.olakaiLoggger)(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
-                        // Send to API (with batching and retry logic handled in client)
                         await (0, client_1.sendToAPI)(payload, {
                             retries: config.retries,
                             timeout: config.timeout,
-                            priority: options.priority || "normal",
+                            priority: "high", // Errors always get high priority
                         });
-                    }, "success monitoring");
+                    }
                 }
+                catch (error) {
+                    (0, utils_1.olakaiLoggger)(`Error during error monitoring: ${error}.`, "error");
+                }
+                ;
+                (0, utils_1.olakaiLoggger)("Error monitoring completed...", "info");
+                throw functionError; // Re-throw the original error to be handled by the caller
             }
-            //========== End of monitoring operations
+            // Handle success case asynchronously
+            makeMonitoringCall(result, processedArgs, args, options, config, start);
             return result; // We know result is defined if we get here (no function error)
         };
     };
+}
+async function makeMonitoringCall(result, processedArgs, args, options, config, start) {
+    try {
+        (0, utils_1.olakaiLoggger)("Applying afterCall middleware...", "info");
+        for (const middleware of middlewares) {
+            if (middleware.afterCall) {
+                const middlewareResult = await middleware.afterCall(result, processedArgs);
+                if (middlewareResult) {
+                    result = middlewareResult;
+                }
+            }
+        }
+    }
+    catch (error) {
+        (0, utils_1.olakaiLoggger)(`Error during afterCall middleware: ${error}. \n Continuing execution...`, "error");
+    }
+    (0, utils_1.olakaiLoggger)("AfterCall middleware completed...", "info");
+    (0, utils_1.olakaiLoggger)("Capturing success data...", "info");
+    // Capture success data
+    const captureResult = options.capture({
+        args: processedArgs,
+        result,
+    });
+    (0, utils_1.olakaiLoggger)("Success data captured...", "info");
+    const prompt = options.sanitize
+        ? sanitizeData(captureResult.input, config.sanitizePatterns)
+        : captureResult.input;
+    const response = options.sanitize
+        ? sanitizeData(captureResult.output, config.sanitizePatterns)
+        : captureResult.output;
+    (0, utils_1.olakaiLoggger)("Resolving identifiers...", "info");
+    const { chatId, email } = resolveIdentifiers(options, args);
+    (0, utils_1.olakaiLoggger)("Creating payload...", "info");
+    const payload = {
+        prompt: (0, utils_1.toApiString)(prompt),
+        response: (0, utils_1.toApiString)(response),
+        chatId: (0, utils_1.toApiString)(chatId),
+        email: (0, utils_1.toApiString)(email),
+        tokens: 0,
+        requestTime: Number(Date.now() - start),
+        ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
+        ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
+        ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
+    };
+    (0, utils_1.olakaiLoggger)(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
+    // Send to API (with batching and retry logic handled in client)
+    try {
+        await (0, client_1.sendToAPI)(payload, {
+            retries: config.retries,
+            timeout: config.timeout,
+            priority: options.priority || "normal",
+        });
+    }
+    catch (error) {
+        (0, utils_1.olakaiLoggger)(`Error during api call: ${error}.`, "error");
+    }
+    (0, utils_1.olakaiLoggger)("API call completed...", "info");
+    //End of monitoring operations
+    (0, utils_1.olakaiLoggger)("Monitoring operations completed...", "info");
 }
 //# sourceMappingURL=monitor.js.map
