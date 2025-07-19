@@ -8,8 +8,8 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
-import { ConfigBuilder, sleep } from "./utils";
-import { StorageType } from "./types";
+import { ConfigBuilder, olakaiLoggger, sleep } from "./utils";
+import { StorageType, ErrorCode } from "./types";
 
 const isBatchingEnabled = false;
 
@@ -36,6 +36,7 @@ function initOnlineDetection() {
     // Could be enhanced with network connectivity checks if needed
     isOnline = true;
   }
+  olakaiLoggger(`Online detection initialized. Status: ${isOnline}`, "info");
 }
 
 /**
@@ -55,7 +56,7 @@ export async function initClient(
   configBuilder.domainUrl(`${domainUrl}/api/monitoring/prompt`);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
-  configBuilder.retries(options.retries || 3);
+  configBuilder.retries(options.retries || 4);
   configBuilder.timeout(options.timeout || 20000);
   configBuilder.enableStorage(options.enableStorage || true);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
@@ -75,9 +76,7 @@ export async function initClient(
   if (!config.apiKey || config.apiKey.trim() === "") {
     throw new Error("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
   }
-  if (config.verbose) {
-    console.log("[Olakai SDK] Config:", config);
-  }
+  olakaiLoggger(`Config: ${JSON.stringify(config)}`, "info");
   // Initialize online detection
   initOnlineDetection();
   
@@ -93,9 +92,7 @@ export async function initClient(
   };
 
   const queueManager = await initQueueManager(queueDependencies);
-  if (config.verbose) {
-    console.log("[Olakai SDK] Queue manager initialized successfully");
-  }
+  olakaiLoggger(`Queue manager initialized successfully`, "info");
 }
 
 /**
@@ -103,7 +100,10 @@ export async function initClient(
  * @returns The current configuration
  */
 export function getConfig(): SDKConfig {
-  return { ...config };
+  if (!config) {
+    throw new Error("[Olakai SDK] Config is not initialized");
+  }
+  return config;
 }
 
 /**
@@ -128,26 +128,44 @@ async function makeAPICall(
         "x-api-key": config.apiKey,
       },
       body: JSON.stringify(
-        Array.isArray(payload) ? payload : payload,
+        Array.isArray(payload) ? payload : [payload],
       ),
       signal: controller.signal,
-    });
+    }) as Response & { response: APIResponse };
 
-    if (config.verbose) {
-      console.log("[Olakai SDK] API response:", response);
-    }
-    if(response.status !== 200 && response.status !== 201 && config.debug) {
-      console.warn("[Olakai SDK] The prompt was not created successfully in the UNO product:", response);
-    }
+    olakaiLoggger(`API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    // Handle different status codes for batch operations
+    if (response.status === ErrorCode.SUCCESS) {
+      // All requests succeeded
+      const result = response.response;
+      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(result)}`, "info");
+      return result;
 
-    const result = await response.json() as Record<string, any>;
-    return { success: true, ...result };
+    } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
+      // Mixed success/failure (Multi-Status)
+      const result = response.response;
+      olakaiLoggger(`Batch requests had mixed results: ${result.successCount}/${result.totalRequests} succeeded`, "warn");
+      return result; // Note: overall success=true even for partial failures
+
+    } else if (response.status === ErrorCode.FAILED) {
+      // All failed or system error
+      const result = await response.json();
+      olakaiLoggger(`All batch requests failed: ${JSON.stringify(result)}`, "error");
+      throw new Error(`Batch processing failed: ${result.message || response.statusText}`);
+
+    } else if (!response.ok) {
+      // Other error status codes
+      olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      
+    } else {
+      // Legacy support for other 2xx status codes
+      const result = response.response;
+      return result;
+    }
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
@@ -158,27 +176,30 @@ async function makeAPICall(
  * Send a payload to the API with retry logic
  * @param payload - The payload to send to the endpoint
  * @param maxRetries - The maximum number of retries
- * @returns A promise that resolves to true if the payload was sent successfully, false otherwise
+ * @returns A promise that resolves to an object with success status and details about batch results
  */
 async function sendWithRetry(
   payload: MonitorPayload | MonitorPayload[],
   maxRetries: number = config.retries!,
-): Promise<boolean> {
+): Promise<APIResponse> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      await makeAPICall(payload);
-      return true;
+      const response = await makeAPICall(payload);
+      if (response.success) {
+        return response;
+      } else if (response.failureCount && response.failureCount > 0) {
+          olakaiLoggger(
+            `Batch partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
+            "info");
+            return response;
+        }
+      
     } catch (err) {
       lastError = err as Error;
 
-      if (config.debug) {
-        console.warn(
-          `[Olakai SDK] Attempt ${attempt + 1}/${maxRetries + 1} failed:`,
-          err,
-        );
-      }
+      olakaiLoggger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -191,12 +212,9 @@ async function sendWithRetry(
   if (config.onError && lastError) {
     config.onError(lastError);
   }
-
-  if (config.debug) {
-    console.error("[Olakai SDK] All retry attempts failed:", lastError);
-  }
-
-  return false;
+  
+  olakaiLoggger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
+  throw lastError;
 }
 
 /**
@@ -218,16 +236,22 @@ export async function sendToAPI(
   } = {},
 ) {
   if (!config.apiKey) {
-    if (config.debug) {
-      console.warn("[Olakai SDK] API key is not set.");
-    }
-    return;
+    throw new Error("[Olakai SDK] API key is not set");
   }
 
   if (isBatchingEnabled) {
     await addToQueue(payload, options);
   } else {
-    await makeAPICall(payload);
+    // For non-batching mode, use makeAPICall directly and handle the response
+    const response = await makeAPICall(payload);
+    
+    // Log any batch-style response information if present
+    if (response.totalRequests && response.successCount !== undefined) {
+      olakaiLoggger(
+        `Direct API call result: ${response.successCount}/${response.totalRequests} requests succeeded`,
+        response.failureCount && response.failureCount > 0 ? "warn" : "info"
+      );
+    }
   }
 }
 
@@ -268,9 +292,7 @@ async function makeControlAPICall(
       signal: controller.signal,
     });
 
-    if (config.verbose) {
-      console.log("[Olakai SDK] Control API response:", response);
-    }
+    olakaiLoggger(`Control API response: ${JSON.stringify(response)}`, "info");
 
     clearTimeout(timeoutId);
 

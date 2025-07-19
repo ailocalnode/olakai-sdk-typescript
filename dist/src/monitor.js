@@ -48,9 +48,7 @@ async function shouldControl(options, args) {
             timeout: controlOptions.timeout,
             priority: controlOptions.priority,
         });
-        if (config.verbose) {
-            console.log("[Olakai SDK] Control response:", response);
-        }
+        (0, utils_1.olakaiLoggger)(`Control response: ${JSON.stringify(response)}`, "info");
         // If not allowed, handle the blocking
         if (!response.allowed) {
             if (controlOptions.onBlocked) {
@@ -71,9 +69,7 @@ async function shouldControl(options, args) {
             // Let the developer decide what to do on error
             const shouldAllow = controlOptions.onError(error, args);
             if (shouldAllow) {
-                if ((0, client_1.getConfig)().verbose) {
-                    console.log("[Olakai SDK] Control error handled, allowing execution");
-                }
+                (0, utils_1.olakaiLoggger)(`Control error handled, allowing execution`, "info");
                 return false; // Allow execution
             }
         }
@@ -96,15 +92,11 @@ function sanitizeData(data, patterns) {
     });
     try {
         const parsed = JSON.parse(serialized);
-        if ((0, client_1.getConfig)().verbose) {
-            console.log("[Olakai SDK] Data successfully sanitized");
-        }
+        (0, utils_1.olakaiLoggger)(`Data successfully sanitized`, "info");
         return parsed;
     }
     catch {
-        if ((0, client_1.getConfig)().debug) {
-            console.warn("[Olakai SDK] Data failed to sanitize");
-        }
+        (0, utils_1.olakaiLoggger)(`Data failed to sanitize`, "warn");
         return "[SANITIZED]";
     }
 }
@@ -126,18 +118,14 @@ function safeMonitoringOperation(operation, context) {
         if (result && typeof result.catch === "function") {
             result.catch((error) => {
                 const config = (0, client_1.getConfig)();
-                if (config.debug) {
-                    console.warn(`[Olakai SDK] Monitoring operation failed (${context}):`, error);
-                }
+                (0, utils_1.olakaiLoggger)(`Monitoring operation failed (${context}): ${JSON.stringify(error)}`, "warn");
                 // Call global error handler if configured
                 if (config.onError) {
                     try {
                         config.onError(error);
                     }
                     catch (handlerError) {
-                        if (config.debug) {
-                            console.warn("[Olakai SDK] Error handler itself failed:", handlerError);
-                        }
+                        (0, utils_1.olakaiLoggger)(`Error handler itself failed: ${JSON.stringify(handlerError)}`, "warn");
                     }
                 }
             });
@@ -145,18 +133,14 @@ function safeMonitoringOperation(operation, context) {
     }
     catch (error) {
         const config = (0, client_1.getConfig)();
-        if (config.debug) {
-            console.warn(`[Olakai SDK] Monitoring operation failed (${context}):`, error);
-        }
+        (0, utils_1.olakaiLoggger)(`Monitoring operation failed (${context}): ${JSON.stringify(error)}`, "warn");
         // Call global error handler if configured
         if (config.onError) {
             try {
                 config.onError(error);
             }
             catch (handlerError) {
-                if (config.debug) {
-                    console.warn("[Olakai SDK] Error handler itself failed:", handlerError);
-                }
+                (0, utils_1.olakaiLoggger)(`Error handler itself failed: ${JSON.stringify(handlerError)}`, "warn");
             }
         }
     }
@@ -310,9 +294,7 @@ function monitor(arg1, arg2) {
                             ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
                             ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
                         };
-                        if (config.verbose) {
-                            console.log("[Olakai SDK] Successfully defined payload", payload);
-                        }
+                        (0, utils_1.olakaiLoggger)(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
                         // Send to API (with batching and retry logic handled in client)
                         await (0, client_1.sendToAPI)(payload, {
                             retries: config.retries,

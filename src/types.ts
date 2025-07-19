@@ -1,5 +1,5 @@
 export type MonitorPayload = {
-  userId?: string;
+  email?: string;
   chatId?: string;
   shouldScore?: boolean;
   task?: string;
@@ -46,7 +46,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   };
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
-  userId?: string | ((args: TArgs) => string);
+  email?: string | ((args: TArgs) => string);
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   control?: ControlOptions<TArgs>; // Control configuration
@@ -84,7 +84,7 @@ export type SDKConfig = {
 
 export type BatchRequest = {
   id: string;
-  payload: MonitorPayload;
+  payload: MonitorPayload[];
   timestamp: number;
   retries: number;
   priority: "low" | "normal" | "high";
@@ -92,8 +92,17 @@ export type BatchRequest = {
 
 export type APIResponse = {
   success: boolean;
-  message?: string;
-  errors?: string[];
+  message: string;
+  // New batch response format fields
+  totalRequests: number;
+  successCount: number;
+  failureCount: number;
+  results: Array<{
+    index: number;
+    success: boolean;
+    promptRequestId: string | null;
+    error: string | null;
+  }>;
 };
 
 export type ControlPayload = {
@@ -105,3 +114,11 @@ export type ControlResponse = {
   reason?: string;
   metadata?: Record<string, any>;
 };
+
+export enum ErrorCode {
+  SUCCESS = 200,
+  PARTIAL_SUCCESS = 207,
+  FAILED = 500,
+  BAD_REQUEST = 400,
+
+}

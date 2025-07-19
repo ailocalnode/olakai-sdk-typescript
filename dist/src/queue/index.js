@@ -167,17 +167,33 @@ class QueueManager {
             const batch = batches[batchIndex];
             const payloads = batch.map((item) => item.payload);
             try {
-                const success = await this.dependencies.sendWithRetry(payloads);
-                if (success) {
+                const result = await this.dependencies.sendWithRetry(payloads);
+                if (result.success) {
                     successfulBatches.add(batchIndex);
-                    if (this.dependencies.config.verbose) {
+                    // Log detailed batch results if available
+                    if (result.response?.totalRequests && result.response?.successCount !== undefined) {
+                        const { totalRequests, successCount, failureCount } = result.response;
+                        if (this.dependencies.config.verbose) {
+                            console.log(`[Olakai SDK] Batch sent: ${successCount}/${totalRequests} requests succeeded`);
+                        }
+                        // If we have partial failures, we might want to handle failed items differently in the future
+                        if (failureCount && failureCount > 0) {
+                            console.warn(`[Olakai SDK] Batch ${batchIndex} had ${failureCount} failed requests`);
+                        }
+                    }
+                    else if (this.dependencies.config.verbose) {
                         console.log(`[Olakai SDK] Successfully sent batch of ${batch.length} items`);
+                    }
+                }
+                else {
+                    if (this.dependencies.config.debug) {
+                        console.error(`[Olakai SDK] Batch ${batchIndex} failed:`, result.error);
                     }
                 }
             }
             catch (err) {
                 if (this.dependencies.config.debug) {
-                    console.error(`[Olakai SDK] Batch ${batchIndex} failed:`, err);
+                    console.error(`[Olakai SDK] Batch ${batchIndex} failed with exception:`, err);
                 }
             }
         }

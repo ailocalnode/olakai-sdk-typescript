@@ -1,5 +1,6 @@
 import type { SDKConfig, MonitorOptions} from "./types";
 import { StorageType } from "./types";
+import { getConfig } from "./client";
 
 // Common patterns for sanitizing sensitive data
 export const DEFAULT_SANITIZE_PATTERNS = [
@@ -235,8 +236,17 @@ export function isNodeJS(): boolean {
  * @returns A promise that resolves after the given number of milliseconds
  */
 export async function sleep(config: SDKConfig, ms: number): Promise<void> {
-  if (config.verbose) {
-    console.log("[Olakai SDK] Sleeping for", ms, "ms");
-  }
+  olakaiLoggger(`Sleeping for ${ms}ms`, "info");
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function olakaiLoggger(message: string, level: "info" | "warn" | "error" = "info"): void {
+  const config = getConfig();
+  if (config.verbose && level === "info") {
+    console.log(`[Olakai SDK] ${message}`);
+  } else if (config.debug && level === "warn") {
+    console.warn(`[Olakai SDK] ${message}`);
+  } else if (config.debug && level === "error") {
+    console.error(`[Olakai SDK] ${message}`);
+  }
 }
