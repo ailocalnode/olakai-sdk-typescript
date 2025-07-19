@@ -157,6 +157,7 @@ async function makeAPICall(
 
     } else if (!response.ok) {
       // Other error status codes
+      olakaiLoggger(`API call failed: ${JSON.stringify(payload)}`, "info");
       olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       
@@ -297,6 +298,7 @@ async function makeControlAPICall(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      olakaiLoggger(`Control API call failed: ${JSON.stringify(payload)}`, "info");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
