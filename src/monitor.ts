@@ -137,9 +137,9 @@ function createErrorInfo(error: any): {
 function resolveIdentifiers<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
-): { chatId: string; userId: string } {
+): { chatId: string; email: string } {
   let chatId = "123";
-  let userId = "anonymous";
+  let email = "anonymous";
   if (typeof options.chatId === "function") {
     try {
       chatId = options.chatId(args);
@@ -150,18 +150,18 @@ function resolveIdentifiers<TArgs extends any[]>(
   } else {
     chatId = options.chatId || "123";
   }
-  if (typeof options.userId === "function") {
+  if (typeof options.email === "function") {
     try {
-      userId = options.userId(args);
-      olakaiLoggger("UserId resolved...", "info");
+      email = options.email(args);
+      olakaiLoggger("Email resolved...", "info");
     } catch (error) {
       olakaiLoggger(`Error during userId resolution: ${error}. \n Continuing execution...`, "error");
     }
   } else {
-    userId = options.userId || "anonymous";
+    email = options.email || "anonymous";
   }
     
-  return { chatId, userId };
+  return { chatId, email };
 }
 
 //TODO : Add a way to pass in a custom tasks/subtasks in the payload
@@ -280,7 +280,7 @@ export function monitor<TArgs extends any[], TResult>(
               const errorResult = options.onError(functionError, processedArgs);
               const errorInfo = createErrorInfo(functionError);
 
-              const { chatId, userId } = resolveIdentifiers(options, args);
+              const { chatId, email } = resolveIdentifiers(options, args);
 
               const payload = {
                 prompt: "",
@@ -289,7 +289,7 @@ export function monitor<TArgs extends any[], TResult>(
                   toApiString(errorInfo.errorMessage) +
                   toApiString(errorResult),
                 chatId: toApiString(chatId),
-                userId: toApiString(userId),
+                email: toApiString(email),
               };
 
               await sendToAPI(payload, {
@@ -360,7 +360,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLoggger("Resolving identifiers...", "info");
 
-  const { chatId, userId } = resolveIdentifiers(options, args);
+  const { chatId, email } = resolveIdentifiers(options, args);
 
   olakaiLoggger("Creating payload...", "info");
 
@@ -368,7 +368,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     prompt: toApiString(prompt),
     response: toApiString(response),
     chatId: toApiString(chatId),
-    userId: toApiString(userId),
+    email: toApiString(email),
     tokens: 0,
     requestTime: Number(Date.now() - start),
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),

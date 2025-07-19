@@ -1,5 +1,5 @@
 export type MonitorPayload = {
-  userId?: string;
+  email?: string;
   chatId?: string;
   shouldScore?: boolean;
   task?: string;
@@ -46,7 +46,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   };
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
-  userId?: string | ((args: TArgs) => string);
+  email?: string | ((args: TArgs) => string);
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   control?: ControlOptions<TArgs>; // Control configuration
