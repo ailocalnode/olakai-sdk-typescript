@@ -100,7 +100,10 @@ export async function initClient(
  * @returns The current configuration
  */
 export function getConfig(): SDKConfig {
-  return { ...config };
+  if (!config) {
+    throw new Error("[Olakai SDK] Config is not initialized");
+  }
+  return config;
 }
 
 /**
