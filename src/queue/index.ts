@@ -76,13 +76,13 @@ export class QueueManager {
             this.batchQueue[index].priority = "high";
           }
           this.persistQueue();
-          this.scheduleClearRetriesQueue();
           if (options.priority === "high") {
             await this.processBatchQueue();
           } else {
-            this.scheduleClearRetriesQueue();
+
             this.scheduleBatchProcessing();
           }
+          this.scheduleClearRetriesQueue();
           return;
         }
       }
@@ -242,13 +242,7 @@ private scheduleClearRetriesQueue(): void {
         }
         for (const resul of result.results) {
           if (!resul.success) {
-            this.batchQueue.push({
-              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              payload: [payloads[resul.index]],
-              timestamp: Date.now(),
-              retries: 0,
-              priority: currentBatch.priority,
-            })
+            newBatch.payload.push(payloads[resul.index]);
           }
         }
         this.batchQueue.push(newBatch);
