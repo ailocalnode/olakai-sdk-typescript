@@ -112,7 +112,7 @@ export function getConfig(): SDKConfig {
  * @returns A promise that resolves to the API response
  */
 async function makeAPICall(
-  payload: MonitorPayload | MonitorPayload[],
+  payload: MonitorPayload[],
 ): Promise<APIResponse> {
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
@@ -127,9 +127,7 @@ async function makeAPICall(
       headers: {
         "x-api-key": config.apiKey,
       },
-      body: JSON.stringify(
-        Array.isArray(payload) ? payload : [payload],
-      ),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     }) as Response & { response: APIResponse };
 
@@ -179,7 +177,7 @@ async function makeAPICall(
  * @returns A promise that resolves to an object with success status and details about batch results
  */
 async function sendWithRetry(
-  payload: MonitorPayload | MonitorPayload[],
+  payload: MonitorPayload[],
   maxRetries: number = config.retries!,
 ): Promise<APIResponse> {
   let lastError: Error | null = null;
@@ -243,7 +241,7 @@ export async function sendToAPI(
     await addToQueue(payload, options);
   } else {
     // For non-batching mode, use makeAPICall directly and handle the response
-    const response = await makeAPICall(payload);
+    const response = await makeAPICall([payload]);
     
     // Log any batch-style response information if present
     if (response.totalRequests && response.successCount !== undefined) {

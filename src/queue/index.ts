@@ -8,7 +8,7 @@ import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from '
 export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
-  sendWithRetry: (payload: MonitorPayload | MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
+  sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
 }
 
 /**
