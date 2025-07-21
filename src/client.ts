@@ -11,8 +11,6 @@ import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLoggger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
 
-const isBatchingEnabled = false;
-
 let config: SDKConfig;
 
 let isOnline = true; // Default to online for server environments
@@ -54,6 +52,7 @@ export async function initClient(
   const configBuilder = new ConfigBuilder();
   configBuilder.apiKey(apiKey);
   configBuilder.domainUrl(`${domainUrl}/api/monitoring/prompt`);
+  configBuilder.enableBatching(options.enableBatching || true);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
   configBuilder.retries(options.retries || 4);
@@ -235,7 +234,7 @@ export async function sendToAPI(
     throw new Error("[Olakai SDK] API key is not set");
   }
 
-  if (isBatchingEnabled) {
+  if (config.enableBatching) {
     await addToQueue(payload, options);
   } else {
     // For non-batching mode, use makeAPICall directly and handle the response

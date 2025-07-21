@@ -67,6 +67,7 @@ export type SDKConfig = {
   apiKey: string;
   domainUrl: string;
   version: string;
+  enableBatching: boolean;
   batchSize: number;
   batchTimeout: number;
   retries: number;
