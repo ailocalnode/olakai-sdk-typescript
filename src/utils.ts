@@ -116,6 +116,11 @@ export class ConfigBuilder {
     return this;
   }
 
+  enableBatching(enable: boolean = true): ConfigBuilder {
+    this.config.enableBatching = enable;
+    return this;
+  }
+
   batchSize(size: number): ConfigBuilder {
     this.config.batchSize = size;
     return this;
@@ -185,6 +190,7 @@ export class ConfigBuilder {
     return {
       apiKey: "",
       domainUrl: "",
+      enableBatching: true,
       batchSize: 10,
       batchTimeout: 5000,
       retries: 3,
