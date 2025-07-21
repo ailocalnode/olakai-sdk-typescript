@@ -69,6 +69,10 @@ export class QueueManager {
         timestamp: Date.now(),
         retries: options.retries || 0,
         priority: options.priority || "normal",})
+        this.persistQueue();
+        this.scheduleBatchProcessing();
+        this.scheduleClearRetriesQueue();
+        return;
     } else {
       for (let index = this.batchQueue.length - 1; index >= 0; index--) {
         if (this.batchQueue[index].payload.length < this.dependencies.config.batchSize && this.batchQueue[index].retries === (options.retries || 0)) {
@@ -213,10 +217,9 @@ private scheduleClearRetriesQueue(): void {
     // Process one batch at a time
     const currentBatch = this.batchQueue.shift();
     if (!currentBatch) {
-      this.scheduleBatchProcessing();
       return;
     }
-
+    this.persistQueue();
 
     const payloads = currentBatch.payload;
 

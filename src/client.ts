@@ -138,7 +138,7 @@ async function makeAPICall(
     // Handle different status codes for batch operations
     if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      olakaiLoggger(`All batch requests succeeded: ${response}`, "info");
+      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(response)}`, "info");
       return response;
 
     } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
@@ -148,7 +148,7 @@ async function makeAPICall(
 
     } else if (response.status === ErrorCode.FAILED) {
       // All failed or system error
-      olakaiLoggger(`All batch requests failed: ${response}`, "error");
+      olakaiLoggger(`All batch requests failed: ${JSON.stringify(response)}`, "error");
       throw new Error(`Batch processing failed: ${response.message || response.statusText}`);
 
     } else if (!response.ok) {
