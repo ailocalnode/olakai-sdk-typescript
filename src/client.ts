@@ -129,7 +129,9 @@ async function makeAPICall(
       body: JSON.stringify(payload),
 
       signal: controller.signal,
-    }) as APIResponse;
+    });
+
+    const responseData = await response.json() as APIResponse;
 
     olakaiLoggger(`API response status: ${response.status}`, "info");
 
@@ -138,28 +140,28 @@ async function makeAPICall(
     // Handle different status codes for batch operations
     if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      olakaiLoggger(`All batch requests succeeded: ${response}`, "info");
-      return response;
+      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(responseData)}`, "info");
+      return responseData;
 
     } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
       // Mixed success/failure (Multi-Status)
-      olakaiLoggger(`Batch requests had mixed results: ${response.successCount}/${response.totalRequests} succeeded`, "warn");
-      return response; // Note: overall success=true even for partial failures
+      olakaiLoggger(`Batch requests had mixed results: ${responseData.successCount}/${responseData.totalRequests} succeeded`, "warn");
+      return responseData; // Note: overall success=true even for partial failures
 
     } else if (response.status === ErrorCode.FAILED) {
       // All failed or system error
-      olakaiLoggger(`All batch requests failed: ${response}`, "error");
-      throw new Error(`Batch processing failed: ${response.message || response.statusText}`);
+      olakaiLoggger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
+      throw new Error(`Batch processing failed: ${responseData.message || response.statusText}`);
 
     } else if (!response.ok) {
       // Other error status codes
-      olakaiLoggger(`API call failed: ${payload}`, "info");
+      olakaiLoggger(`API call failed: ${JSON.stringify(payload)}`, "info");
       olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       
     } else {
       // Legacy support for other 2xx status codes
-      return response;
+      return responseData;
     }
   } catch (err) {
     clearTimeout(timeoutId);
