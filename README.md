@@ -2,7 +2,7 @@
 
 A TypeScript SDK for monitoring function calls and controlling execution with real-time API decisions.
 
-[![npm version](https://badge.fury.io/js/olakai-sdk.svg)](https://badge.fury.io/js/olakai-sdk)
+[![npm version](https://badge.fury.io/js/@olakai%2Fsdk.svg)](https://badge.fury.io/js/@olakai%2Fsdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
@@ -455,10 +455,10 @@ This will log detailed information about what the SDK is doing.
 
 ### Simple Functions
 
-| Function                      | Description               | Use Case                      |
-| ----------------------------- | ------------------------- | ----------------------------- |
-| `olakaiMonitor(fn, options?)` | Auto-capture with options | Most common use case          |
-| `olakaiAdvancedMonitor(fn, options)`| Advanced configuration | For specific use-cases     |
+| Function                             | Description               | Use Case               |
+| ------------------------------------ | ------------------------- | ---------------------- |
+| `olakaiMonitor(fn, options?)`        | Auto-capture with options | Most common use case   |
+| `olakaiAdvancedMonitor(fn, options)` | Advanced configuration    | For specific use-cases |
 
 ### Helper Objects
 
