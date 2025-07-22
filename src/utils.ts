@@ -230,7 +230,7 @@ export function isNodeJS(): boolean {
  * @param ms - The number of milliseconds to sleep
  * @returns A promise that resolves after the given number of milliseconds
  */
-export async function sleep(config: SDKConfig, ms: number): Promise<void> {
+export async function sleep(ms: number): Promise<void> {
   olakaiLoggger(`Sleeping for ${ms}ms`, "info");
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
