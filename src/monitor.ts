@@ -1,5 +1,5 @@
 import { sendToAPI, sendToControlAPI, getConfig } from "./client";
-import type { MonitorOptions, ControlPayload, ControlResponse, SDKConfig } from "./types";
+import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLoggger, toApiString } from "./utils";
 
@@ -23,18 +23,10 @@ async function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
 ): Promise<boolean> {
-  const controlOptions = options.control;
+  const controlOptions = options.controlOptions;
   
   // If control is not configured, allow execution
   if (!controlOptions) {
-    return false;
-  }
-  
-  // Check if control is enabled
-  if (typeof controlOptions.enabled === "boolean" && !controlOptions.enabled) {
-    return false;
-  }
-  if (typeof controlOptions.enabled === "function" && !controlOptions.enabled(args)) {
     return false;
   }
   
@@ -42,55 +34,35 @@ async function shouldControl<TArgs extends any[]>(
     const config = getConfig();
     
     // Prepare input for control check
-    const input = controlOptions.captureInput(args);
-    
-    // Sanitize input if required
-    const sanitizedInput = controlOptions.sanitize 
-      ? sanitizeData(input, config.sanitizePatterns)
-      : input;
+    const input = options.capture({ args, result: null });
+
+    const { chatId, email } = resolveIdentifiers(options, args);
     
     // Create control payload
     const payload: ControlPayload = {
-      input: sanitizedInput,
+      prompt: input.input,
+      email: email,
+      askedOverride: controlOptions.askOverride,
     };
     
     // Send control request
-    const response: ControlResponse = await sendToControlAPI(payload, {
-      endpoint: controlOptions.endpoint,
-      retries: controlOptions.retries,
-      timeout: controlOptions.timeout,
-      priority: controlOptions.priority,
+    const response: ControlAPIResponse = await sendToControlAPI(payload, {
+      retries: config.retries,
+      timeout: config.timeout,
+      priority: "high",
     });
     
     olakaiLoggger(`Control response: ${JSON.stringify(response)}`, "info");
     
     // If not allowed, handle the blocking
     if (!response.allowed) {
-      if (controlOptions.onBlocked) {
-        // Let the developer handle the blocking
-        controlOptions.onBlocked(args, response);
-        // If onBlocked doesn't throw, we assume execution should be blocked
-        return true;
-      } else {
-        // Default behavior: throw an error
-        throw new Error(`Function execution blocked: ${response.reason || 'No reason provided'}`);
-      }
-    }
-    
-    return false; // Allow execution
+      return true;
+    } 
+    return false;
     
   } catch (error) {
-    if (controlOptions.onError) {
-      // Let the developer decide what to do on error
-      const shouldAllow = controlOptions.onError(error, args);
-      if (shouldAllow) {
-        olakaiLoggger(`Control error handled, allowing execution`, "info");
-        return false; // Allow execution
-      }
-    }
-    
-    // If no error handler or it returns false, re-throw the error
-    throw error;
+    olakaiLoggger(`Control call failed, disallowing execution ${error}`, "error");
+    return true; // Allow execution
   }
 }
 
@@ -220,21 +192,14 @@ export function monitor<TArgs extends any[], TResult>(
       olakaiLoggger("Monitoring initialization completed...", "info");
 
       olakaiLoggger("Checking if we should control this call...", "info");
-      let shouldControlCall = false;
-      try {
-        shouldControlCall = await shouldControl(options, args);
-      } catch (error) {
-        // If shouldControl throws an error, it means execution was blocked
-        // We should re-throw this error to prevent function execution
-        throw error;
-      }
+
+      const shouldControlCall = await shouldControl(options, args);
+
       olakaiLoggger("Should control check completed...", "info");
 
-      //If we should control (block execution), return early
+      //If we should control (block execution), throw an error
       if (shouldControlCall) {
-        // This should not happen in normal flow as shouldControl throws on block
-        // But kept for safety
-        throw new Error("Function execution blocked by control logic");
+        throw new Error("Function execution blocked by Olakai's Control API");
       }
 
       olakaiLoggger("Applying beforeCall middleware...", "info");

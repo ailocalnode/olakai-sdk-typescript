@@ -3,7 +3,7 @@ import type {
   MonitorPayload,
   MonitoringAPIResponse,
   ControlPayload,
-  ControlResponse,
+  ControlAPIResponse,
 } from "./types";
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
@@ -133,7 +133,7 @@ async function makeAPICall(
 
     const responseData = await response.json() as MonitoringAPIResponse;
 
-    olakaiLoggger(`API response status: ${response.status}`, "info");
+    olakaiLoggger(`Monitoring API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
@@ -268,7 +268,7 @@ async function makeControlAPICall(
   payload: ControlPayload,
   endpoint?: string,
   timeout?: number,
-): Promise<ControlResponse> {
+): Promise<ControlAPIResponse> {
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
@@ -290,23 +290,22 @@ async function makeControlAPICall(
       signal: controller.signal,
     });
 
-    olakaiLoggger(`Control API response: ${JSON.stringify(response)}`, "info");
+    const responseData = await response.json() as ControlAPIResponse;
+
+    olakaiLoggger(`Control API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       olakaiLoggger(`Control API call failed: ${JSON.stringify(payload)}`, "info");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json() as any;
-    
+    }    
     // Ensure the response has the expected structure
-    if (typeof result.allowed !== 'boolean') {
+    if (typeof responseData.allowed !== 'boolean') {
       throw new Error("Invalid control response: missing 'allowed' field");
     }
     
-    return result as ControlResponse;
+    return responseData;
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
@@ -327,7 +326,7 @@ export async function sendToControlAPI(
     timeout?: number;
     priority?: "low" | "normal" | "high";
   } = {},
-): Promise<ControlResponse> {
+): Promise<ControlAPIResponse> {
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
@@ -342,12 +341,7 @@ export async function sendToControlAPI(
     } catch (err) {
       lastError = err as Error;
 
-      if (config.debug) {
-        console.warn(
-          `[Olakai SDK] Control API attempt ${attempt + 1}/${maxRetries + 1} failed:`,
-          err,
-        );
-      }
+      olakaiLoggger(`Control API attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -361,9 +355,6 @@ export async function sendToControlAPI(
     config.onError(lastError);
   }
 
-  if (config.debug) {
-    console.error("[Olakai SDK] All control API retry attempts failed:", lastError);
-  }
-
+  olakaiLoggger(`All control API retry attempts failed: ${JSON.stringify(lastError)}`, "error");
   throw lastError;
 }

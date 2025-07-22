@@ -54,6 +54,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
  */
 export type ControlOptions<TArgs extends any[]> = {
   onError?: (error: any, args: TArgs) => boolean; // Handler for control API errors, return true to allow execution
+  askOverride?: string[]; // List of parameters to override the control check
 };
 
 export enum StorageType {
@@ -119,7 +120,7 @@ export type MonitoringAPIResponse = {
 /**
  * Response for control API
  */
-export type ControlResponse = {
+export type ControlAPIResponse = {
   allowed: boolean;
   reason?: string;
   metadata?: Record<string, any>;
