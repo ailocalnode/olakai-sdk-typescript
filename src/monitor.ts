@@ -189,7 +189,7 @@ export function monitor<TArgs extends any[], TResult>(
 
       olakaiLoggger("Checking if we should control this call...", "info");
 
-      const shouldControlCall = await shouldControl(options, args);
+      const shouldControlCall = false; //await shouldControl(options, args);
 
       olakaiLoggger("Should control check completed...", "info");
 
