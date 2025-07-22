@@ -111,6 +111,11 @@ export class ConfigBuilder {
     return this;
   }
 
+  controlEndpoint(url: string): ConfigBuilder {
+    this.config.controlEndpoint = url;
+    return this;
+  }
+
   version(v: string): ConfigBuilder {
     this.config.version = v;
     return this;
@@ -190,6 +195,7 @@ export class ConfigBuilder {
     return {
       apiKey: "",
       domainUrl: "",
+      controlEndpoint: "",
       enableBatching: true,
       batchSize: 10,
       batchTimeout: 5000,
