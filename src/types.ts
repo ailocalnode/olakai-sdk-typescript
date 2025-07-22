@@ -71,6 +71,7 @@ export enum StorageType {
 export type SDKConfig = {
   apiKey: string;
   domainUrl: string;
+  controlEndpoint: string;
   version: string;
   enableBatching: boolean;
   batchSize: number;

@@ -52,6 +52,7 @@ export async function initClient(
   const configBuilder = new ConfigBuilder();
   configBuilder.apiKey(apiKey);
   configBuilder.domainUrl(`${domainUrl}/api/monitoring/prompt`);
+  configBuilder.controlEndpoint(`${domainUrl}/api/control/check`);
   configBuilder.enableBatching(options.enableBatching || true);
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTimeout(options.batchTimeout || 5000);
@@ -260,21 +261,17 @@ export { getQueueSize, clearQueue, flushQueue, getQueueManager } from './queue';
 /**
  * Make a control API call to check if execution should be allowed
  * @param payload - The control payload to send
- * @param endpoint - Optional custom endpoint for control checks
- * @param timeout - Custom timeout for this request
  * @returns A promise that resolves to the control response
  */
 async function makeControlAPICall(
   payload: ControlPayload,
-  endpoint?: string,
-  timeout?: number,
 ): Promise<ControlAPIResponse> {
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
 
-  const controlEndpoint = endpoint || config.domainUrl!.replace('/monitoring/prompt', '/control/check');
-  const requestTimeout = timeout || config.timeout;
+  const controlEndpoint = config.controlEndpoint;
+  const requestTimeout = config.timeout;
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
@@ -320,23 +317,18 @@ async function makeControlAPICall(
  */
 export async function sendToControlAPI(
   payload: ControlPayload,
-  options: {
-    endpoint?: string;
-    retries?: number;
-    timeout?: number;
-    priority?: "low" | "normal" | "high";
-  } = {},
 ): Promise<ControlAPIResponse> {
+  
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
 
-  const maxRetries = options.retries ?? config.retries!;
+  const maxRetries = config.retries ?? 4;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const response = await makeControlAPICall(payload, options.endpoint, options.timeout);
+      const response = await makeControlAPICall(payload);
       return response;
     } catch (err) {
       lastError = err as Error;
