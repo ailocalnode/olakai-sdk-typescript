@@ -241,7 +241,7 @@ export function olakaiLoggger(message: string, level: "info" | "warn" | "error" 
     console.log(`[Olakai SDK] ${message}`);
   } else if (config.debug && level === "warn") {
     console.warn(`[Olakai SDK] ${message}`);
-  } else if (config.debug && level === "error") {
+  } else if (level === "error") {
     console.error(`[Olakai SDK] ${message}`);
   }
 }
