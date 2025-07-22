@@ -11,7 +11,6 @@ export {
   capture,
 } from "./src/helpers";
 export * from "./src/types";
-export { getQueueSize, clearQueue, flushQueue } from "./src/queue";
 
 // Re-export middleware
 export {
@@ -28,6 +27,5 @@ export {
 
 // Re-export utilities
 export {
-  validateMonitorOptions,
   DEFAULT_SANITIZE_PATTERNS,
 } from "./src/utils";

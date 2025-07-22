@@ -1,4 +1,4 @@
-import type { SDKConfig, MonitorOptions} from "./types";
+import type { SDKConfig} from "./types";
 import { StorageType } from "./types";
 import { getConfig } from "./client";
 
@@ -54,23 +54,6 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     config.maxStorageSize <= 0
   ) {
     errors.push("Max storage size must be positive");
-  }
-
-  return errors;
-}
-
-// Validate monitor options
-export function validateMonitorOptions<TArgs extends any[], TResult>(
-  options: MonitorOptions<TArgs, TResult>,
-): string[] {
-  const errors: string[] = [];
-
-  if (!options.task || options.task.trim() === "") {
-    errors.push("Monitor name is required");
-  }
-
-  if (!options.capture || typeof options.capture !== "function") {
-    errors.push("Capture function is required");
   }
 
   return errors;
