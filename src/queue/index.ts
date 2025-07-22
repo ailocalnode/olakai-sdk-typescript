@@ -1,4 +1,4 @@
-import type { APIResponse, BatchRequest, MonitorPayload, SDKConfig } from '../types';
+import type { BatchRequest, MonitoringAPIResponse, MonitorPayload, SDKConfig } from '../types';
 import { olakaiLoggger } from '../utils';
 import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from './storage/index';
 
@@ -8,7 +8,7 @@ import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from '
 export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
-  sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<APIResponse>;
+  sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<MonitoringAPIResponse>;
 
 }
 

@@ -1,7 +1,7 @@
 import type {
   SDKConfig,
   MonitorPayload,
-  APIResponse,
+  MonitoringAPIResponse,
   ControlPayload,
   ControlResponse,
 } from "./types";
@@ -112,7 +112,7 @@ export function getConfig(): SDKConfig {
  */
 async function makeAPICall(
   payload: MonitorPayload[],
-): Promise<APIResponse> {
+): Promise<MonitoringAPIResponse> {
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
@@ -131,7 +131,7 @@ async function makeAPICall(
       signal: controller.signal,
     });
 
-    const responseData = await response.json() as APIResponse;
+    const responseData = await response.json() as MonitoringAPIResponse;
 
     olakaiLoggger(`API response status: ${response.status}`, "info");
 
@@ -178,7 +178,7 @@ async function makeAPICall(
 async function sendWithRetry(
   payload: MonitorPayload[],
   maxRetries: number = config.retries!,
-): Promise<APIResponse> {
+): Promise<MonitoringAPIResponse> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {

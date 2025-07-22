@@ -1,3 +1,6 @@
+/**
+ * Payload for monitoring API
+ */
 export type MonitorPayload = {
   email?: string;
   chatId?: string;
@@ -12,27 +15,18 @@ export type MonitorPayload = {
 };
 
 /**
- * Configuration for control behavior
+ * Payload for control API
  */
-export type ControlOptions<TArgs extends any[]> = {
-  enabled?: boolean | ((args: TArgs) => boolean);
-  endpoint?: string; // Optional separate endpoint for control checks
-  timeout?: number; // Timeout for the control API call
-  retries?: number; // Number of retries for failed control API calls
-  captureInput: (args: TArgs) => any; // Function to extract input for control check
-  onBlocked?: (args: TArgs, controlResponse: any) => void | never; // Handler when control blocks execution
-  onError?: (error: any, args: TArgs) => boolean; // Handler for control API errors, return true to allow execution
-  sanitize?: boolean; // Whether to sanitize input before sending to control API
-  priority?: "low" | "normal" | "high"; // Priority for control API calls
+export type ControlPayload = {
+  prompt: string;
+  email?: string;
+  askedOverride?: string[];
 };
 
 /**
  * Configuration for each monitored function
  */
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  task?: string;
-  subTask?: string;
-  shouldScore?: boolean;
   capture: (ctx: { args: TArgs; result: TResult }) => {
     input: any;
     output: any;
@@ -47,9 +41,19 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
   email?: string | ((args: TArgs) => string);
+  task?: string;
+  subTask?: string;
+  shouldScore?: boolean;
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
-  control?: ControlOptions<TArgs>; // Control configuration
+  controlOptions?: ControlOptions<TArgs>; // Control configuration
+};
+
+/**
+ * Configuration for control behavior
+ */
+export type ControlOptions<TArgs extends any[]> = {
+  onError?: (error: any, args: TArgs) => boolean; // Handler for control API errors, return true to allow execution
 };
 
 export enum StorageType {
@@ -83,6 +87,9 @@ export type SDKConfig = {
   verbose: boolean;
 };
 
+/**
+ * Batch request for reporting API
+ */
 export type BatchRequest = {
   id: string;
   payload: MonitorPayload[];
@@ -91,7 +98,10 @@ export type BatchRequest = {
   priority: "low" | "normal" | "high";
 };
 
-export type APIResponse = {
+/**
+ * Response for monitoring API
+ */
+export type MonitoringAPIResponse = {
   success: boolean;
   message: string;
   // New batch response format fields
@@ -106,10 +116,9 @@ export type APIResponse = {
   }>;
 };
 
-export type ControlPayload = {
-  input: any;
-};
-
+/**
+ * Response for control API
+ */
 export type ControlResponse = {
   allowed: boolean;
   reason?: string;
