@@ -18,23 +18,28 @@ npm install @olakai/sdk
 import { initClient, olakaiMonitor } from @olakai/sdk;
 
 // 1. Initialize once
-initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
+initClient("your-olakai-api-key", "https://app.olakai.ai");
 
 // 2. Wrap any function - that's it!
-const sayHello = olakaiMonitor(async (name: string) => {
-  return `Hello, ${name}!`;
+const completeMyPrompt = olakaiMonitor(async (prompt: string) => {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: prompt }],
+  });
+  return completion.choices[0].message.content;
+}
 });
 
 // 3. Use normally - monitoring happens automatically
-const result = await sayHello("World");
-console.log(result); // "Hello, World!"
+const result = await completeMyPrompt("Give me baby name ideas!");
+console.log(result);
 ```
 
 **That's it!** Your function calls are now being monitored automatically. No complex configuration needed.
 
 **What it does?** All inputs and outputs of the function are being sent to the API!
 
-**How?** The inputs will be displayed as the "prompt" and the return object as the "response". (in the UNO product)
+**How?** The inputs will be displayed as the "prompt" and the return object as the "response" in Olakai's control dashboard.
 
 <details>
 <summary><strong>🤖 Real Example: OpenAI API Call (Click to expand)</strong></summary>
@@ -70,7 +75,7 @@ import OpenAI from "openai";
 import { initClient, olakaiMonitor } from "@olakai/sdk";
 
 // Initialize Olakai SDK
-initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
+initClient("your-olakai-api-key", "https://app.olakai.ai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -161,20 +166,50 @@ Built-in error handling, retries, and offline support
 
 ```typescript
 import { olakaiMonitor } from "@olakai/sdk";
+import OpenAI from "openai";
 
-// Works with any function
-const processOrder = olakaiMonitor(
-  async (orderId: string) => {
-    // Your business logic
-    return { success: true, orderId };
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Monitor customer support response generation
+const generateSupportResponse = olakaiMonitor(
+  async (customerMessage: string, orderHistory: any[]) => {
+    const systemPrompt = `You are a helpful customer support agent. 
+    Respond professionally and empathetically to customer inquiries. 
+    Use the provided order history to give accurate information.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Customer message: ${customerMessage}\nOrder history: ${JSON.stringify(
+            orderHistory
+          )}`,
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    });
+
+    return completion.choices[0].message.content;
   },
   {
     task: "Customer service", // Optional: give it a task
-    subtask: "process-order", // Optional: give it a subtask
+    subtask: "Generate Support Response", // Optional: give it a subtask
   }
 );
 
-await processOrder("order-123");
+// Usage example
+const customerMessage = "I haven't received my order #12345 yet. Can you help?";
+const orderHistory = [
+  { orderId: "12345", status: "shipped", tracking: "1Z999AA1234567890" },
+];
+
+const response = await generateSupportResponse(customerMessage, orderHistory);
+console.log(response);
 ```
 
 **What it does?** The difference here, is that you can pass additionnal options, like subtask and task if you want your Olakai's calls to be specific! This helps for analytics generation!
@@ -183,22 +218,51 @@ await processOrder("order-123");
 
 ```typescript
 import { olakaiMonitor } from "@olakai/sdk";
+import OpenAI from "openai";
 
-// Works with any function
-const processOrder = olakaiMonitor(
-  async (orderId: string) => {
-    // Your business logic
-    return { success: true, orderId };
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Monitor customer support with user tracking
+const generatePersonalizedResponse = olakaiMonitor(
+  async (
+    customerMessage: string,
+    customerEmail: string,
+    chatSessionId: string
+  ) => {
+    const systemPrompt = `You are a helpful customer support agent. 
+    Respond professionally and empathetically to customer inquiries.
+    Use the customer's email to provide personalized assistance.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Customer message: ${customerMessage}\nCustomer email: ${customerEmail}`,
+        },
+      ],
+      max_tokens: 400,
+      temperature: 0.6,
+    });
+
+    return completion.choices[0].message.content;
   },
   {
     task: "Customer service", // Optional: give it a task
-    subtask: "process-order", // Optional: give it a subtask
-    getUserId: "example@olakai.ai" | ((args) => string) //Optional: You can pass a string or a function that will fetch the userId!
-    getChatId: "123" | ((args) => string) //Optional: You can pass a string or a function that will fetch the chatId!
+    subtask: "Generate Personalized Response", // Optional: give it a subtask
+    getUserId: (args) => args[1], // Get userId from customer email
+    getChatId: (args) => args[2], // Get chatId from session ID
   }
 );
 
-await processOrder("order-123");
+await generatePersonalizedResponse(
+  "I need help with my account",
+  "customer@example.com",
+  "chat-123"
+);
 ```
 
 **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
@@ -207,23 +271,52 @@ await processOrder("order-123");
 
 ```typescript
 import { olakaiMonitor } from "@olakai/sdk";
+import OpenAI from "openai";
 
-// Works with any function
-const processOrder = olakaiMonitor(
-  async (orderId: string) => {
-    // Your business logic
-    return { success: true, orderId };
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Monitor customer support with prompt scoring
+const analyzeCustomerSentiment = olakaiMonitor(
+  async (
+    customerMessage: string,
+    customerEmail: string,
+    chatSessionId: string
+  ) => {
+    const systemPrompt = `You are a customer support agent analyzing customer sentiment.
+    Respond with a sentiment analysis and appropriate support response.
+    Be empathetic and professional in your analysis.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Customer message: ${customerMessage}\nCustomer email: ${customerEmail}`,
+        },
+      ],
+      max_tokens: 300,
+      temperature: 0.5,
+    });
+
+    return completion.choices[0].message.content;
   },
   {
     task: "Customer service", // Optional: give it a task
-    subtask: "process-order", // Optional: give it a subtask
-    getUserId: "example@olakai.ai" | ((args) => string), //Optional: You can pass a string or a function that will fetch the userId!
-    getChatId: "123" | ((args) => string), //Optional: You can pass a string or a function that will fetch the chatId!
-    shouldScore: true,
+    subtask: "Analyze Customer Sentiment", // Optional: give it a subtask
+    getUserId: (args) => args[1], // Get userId from customer email
+    getChatId: (args) => args[2], // Get chatId from session ID
+    shouldScore: true, // Enable prompt scoring for sentiment analysis
   }
 );
 
-await processOrder("order-123");
+await analyzeCustomerSentiment(
+  "I'm very frustrated with your service",
+  "customer@example.com",
+  "chat-456"
+);
 ```
 
 **What it does?** This feature lets you specify if the "prompt" (so the args of the function you monitor), should get a "prompting score", the same way Olakai is doing it for standard prompts in the UNO product.
@@ -498,18 +591,6 @@ This will log detailed information about what the SDK is doing.
 - Monitoring happens asynchronously and shouldn't affect performance
 - Use `priority: "low"` for non-critical functions
 - Check network connectivity
-
----
-
-## Examples Repository
-
-Check out our [examples repository](https://github.com/olakai/sdk-examples) for complete working examples:
-
-- Express.js REST API
-- Next.js application
-- Database monitoring
-- Authentication flows
-- Error handling patterns
 
 ---
 
