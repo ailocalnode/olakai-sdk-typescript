@@ -70,6 +70,7 @@ export const capture = {
     task?: string,
     subTask?: string,
     shouldScore?: boolean,
+    onMonitoredFunctionError?: boolean,
   }) => ({
     capture: ({ args, result }: { args: TArgs; result: TResult }) => ({
       input: config.input(args),
@@ -79,6 +80,7 @@ export const capture = {
     chatId: config.chatId,
     task: config.task,
     subTask: config.subTask,
+    onMonitoredFunctionError: config.onMonitoredFunctionError,
   }),
 };
 
@@ -94,6 +96,7 @@ export function olakaiMonitor<T extends (...args: any[]) => any>(
     task?: string,
     subTask?: string,
     shouldScore?: boolean,
+    onMonitoredFunctionError?: boolean,
   }
 ): T {
   const monitorOptions = {

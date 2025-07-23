@@ -1,4 +1,4 @@
-import type { SDKConfig, MonitorOptions} from "./types";
+import type { SDKConfig} from "./types";
 import { StorageType } from "./types";
 import { getConfig } from "./client";
 
@@ -54,23 +54,6 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     config.maxStorageSize <= 0
   ) {
     errors.push("Max storage size must be positive");
-  }
-
-  return errors;
-}
-
-// Validate monitor options
-export function validateMonitorOptions<TArgs extends any[], TResult>(
-  options: MonitorOptions<TArgs, TResult>,
-): string[] {
-  const errors: string[] = [];
-
-  if (!options.task || options.task.trim() === "") {
-    errors.push("Monitor name is required");
-  }
-
-  if (!options.capture || typeof options.capture !== "function") {
-    errors.push("Capture function is required");
   }
 
   return errors;
@@ -247,7 +230,7 @@ export function isNodeJS(): boolean {
  * @param ms - The number of milliseconds to sleep
  * @returns A promise that resolves after the given number of milliseconds
  */
-export async function sleep(config: SDKConfig, ms: number): Promise<void> {
+export async function sleep(ms: number): Promise<void> {
   olakaiLoggger(`Sleeping for ${ms}ms`, "info");
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -258,7 +241,7 @@ export function olakaiLoggger(message: string, level: "info" | "warn" | "error" 
     console.log(`[Olakai SDK] ${message}`);
   } else if (config.debug && level === "warn") {
     console.warn(`[Olakai SDK] ${message}`);
-  } else if (config.debug && level === "error") {
+  } else if (level === "error") {
     console.error(`[Olakai SDK] ${message}`);
   }
 }

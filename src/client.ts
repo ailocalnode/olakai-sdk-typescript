@@ -202,7 +202,7 @@ async function sendWithRetry(
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
         const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-        await sleep(config, delay);
+        await sleep(delay);
       }
     }
   }
@@ -338,7 +338,7 @@ export async function sendToControlAPI(
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
         const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-        await sleep(config, delay);
+        await sleep(delay);
       }
     }
   }

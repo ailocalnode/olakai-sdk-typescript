@@ -236,9 +236,9 @@ export function monitor<TArgs extends any[], TResult>(
               }
             }
 
-            // Capture error data if onError handler is provided
-            if (options.onError) {
-              const errorResult = options.onError(functionError, processedArgs);
+            // Capture error data if onMonitoredFunctionError boolean is provided
+            if (options.onMonitoredFunctionError ?? true) {
+
               const errorInfo = createErrorInfo(functionError);
 
               const { chatId, email } = resolveIdentifiers(options, args);
@@ -248,7 +248,7 @@ export function monitor<TArgs extends any[], TResult>(
                 response: "",
                 errorMessage:
                   toApiString(errorInfo.errorMessage) +
-                  toApiString(errorResult),
+                  toApiString(errorInfo.stackTrace),
                 chatId: toApiString(chatId),
                 email: toApiString(email),
               };
