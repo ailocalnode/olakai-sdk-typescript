@@ -134,7 +134,7 @@ function resolveIdentifiers<TArgs extends any[]>(
 
 //TODO : Add a way to pass in a custom tasks/subtasks in the payload
 /**
- * Monitor a function
+ * Monitor a function and send the data to the Olakai API
  * @param options - The options for the monitored function
  * @param fn - The function to monitor
  * @returns The monitored function
