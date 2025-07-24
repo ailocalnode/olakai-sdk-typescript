@@ -23,7 +23,7 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     errors.push("API key is required");
   }
 
-  if (config.domainUrl && !isValidUrl(config.domainUrl)) {
+  if (config.monitorEndpoint && !isValidUrl(config.monitorEndpoint)) {
     errors.push("API URL must be a valid URL");
   }
 
@@ -89,8 +89,8 @@ export class ConfigBuilder {
     return this;
   }
 
-  domainUrl(url: string): ConfigBuilder {
-    this.config.domainUrl = url;
+  monitorEndpoint(url: string): ConfigBuilder {
+    this.config.monitorEndpoint = url;
     return this;
   }
 
@@ -177,7 +177,7 @@ export class ConfigBuilder {
 
     return {
       apiKey: "",
-      domainUrl: "",
+      monitorEndpoint: "",
       controlEndpoint: "",
       enableBatching: true,
       batchSize: 10,

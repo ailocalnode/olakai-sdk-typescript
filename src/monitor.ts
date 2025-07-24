@@ -1,4 +1,4 @@
-import { sendToAPI, sendToControlAPI, getConfig } from "./client";
+import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
@@ -32,7 +32,6 @@ async function shouldControl<TArgs extends any[]>(
   }
   
   try {
-    const config = getConfig();
     
     // Prepare input for control check
     const input = options.capture({ args, result: null });
@@ -42,17 +41,21 @@ async function shouldControl<TArgs extends any[]>(
     // Create control payload
     const payload: ControlPayload = {
       prompt: input.input,
+      chatId: chatId,
+      task: options.task,
+      subTask: options.subTask,
+      tokens: 0,
       email: email,
-      askedOverride: controlOptions.askOverride,
+      overrideControlCriteria: controlOptions?.askOverride,
     };
     
     // Send control request
-    const response: ControlAPIResponse = await sendToControlAPI(payload);
+    const response: ControlAPIResponse = await sendToAPI(payload, "control");
     
     olakaiLogger(`Control response: ${JSON.stringify(response)}`, "info");
     
     // If not allowed, handle the blocking
-    if (!response.allowed) {
+    if (!response.isAllowed) {
       return true;
     } 
     return false;
@@ -193,7 +196,7 @@ export function monitor<TArgs extends any[], TResult>(
 
       olakaiLogger("Checking if we should control this call...", "info");
 
-      const shouldControlCall = false; //await shouldControl(options, args);
+      const shouldControlCall = await shouldControl(options, args);
 
       olakaiLogger("Should control check completed...", "info");
 
@@ -304,11 +307,11 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   // Send to API (with batching and retry logic handled in client)
   try {
-    await sendToAPI(payload, {
-          retries: config.retries,
-          timeout: config.timeout,
-          priority: options.priority || "normal",
-        });
+    await sendToAPI(payload, "monitoring", {
+      retries: config.retries,
+      timeout: config.timeout,
+      priority: options.priority || "normal",
+    });
   } catch (error) {
     olakaiLogger(`Error during api call: ${error}.`, "error");
   }
@@ -343,11 +346,11 @@ async function reportError<TArgs extends any[], TResult>(
     chatId: toApiString(chatId),
     email: toApiString(email),
   }
-  await sendToAPI(payload, {
+  await sendToAPI(payload, "monitoring", {
     retries: config.retries,
-      timeout: config.timeout,
-      priority: "high", // Errors always get high priority
-    });
+    timeout: config.timeout,
+    priority: "high", // Errors always get high priority
+  });
     } catch (error) {
       olakaiLogger(`Error during error monitoring: ${error}.`, "error");
     }

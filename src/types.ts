@@ -20,7 +20,11 @@ export type MonitorPayload = {
 export type ControlPayload = {
   prompt: string;
   email?: string;
-  askedOverride?: string[];
+  chatId?: string;
+  task?: string;
+  subTask?: string;
+  tokens?: number;
+  overrideControlCriteria?: string[];
 };
 
 /**
@@ -64,7 +68,7 @@ export enum StorageType {
  */
 export type SDKConfig = {
   apiKey: string;
-  domainUrl: string;
+  monitorEndpoint: string;
   controlEndpoint: string;
   version: string;
   enableBatching: boolean;
@@ -117,9 +121,8 @@ export type MonitoringAPIResponse = {
  * Response for control API
  */
 export type ControlAPIResponse = {
-  allowed: boolean;
-  reason?: string;
-  metadata?: Record<string, any>;
+  isAllowed: boolean;
+  message?: string;
 };
 
 export enum ErrorCode {

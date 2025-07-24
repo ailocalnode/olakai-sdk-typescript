@@ -1,4 +1,4 @@
-import type { BatchRequest, MonitoringAPIResponse, MonitorPayload, SDKConfig } from '../types';
+import type { BatchRequest, ControlAPIResponse, ControlPayload, MonitoringAPIResponse, MonitorPayload, SDKConfig } from '../types';
 import { olakaiLogger } from '../utils';
 import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from './storage/index';
 
@@ -8,7 +8,7 @@ import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from '
 export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
-  sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<MonitoringAPIResponse>;
+  sendWithRetry: (payload: MonitorPayload[] | ControlPayload, maxRetries?: number, role?: "monitoring" | "control" ) => Promise<MonitoringAPIResponse | ControlAPIResponse>;
 
 }
 
@@ -229,7 +229,7 @@ private scheduleClearRetriesQueue(): void {
     }
 
     try {
-      const result = await this.dependencies.sendWithRetry(payloads);
+      const result = await this.dependencies.sendWithRetry(payloads, this.dependencies.config.retries, "monitoring") as MonitoringAPIResponse;
       
       if (result.success) {
         // All succeeded (no detailed results)
