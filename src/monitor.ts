@@ -1,5 +1,5 @@
 import { sendToAPI, getConfig } from "./client";
-import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } from "./types";
+import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
 import { OlakaiFunctionBlocked } from "./exceptions";
@@ -27,15 +27,11 @@ async function shouldControl<TArgs extends any[]>(
 ): Promise<boolean> {
   
   try {
-    
-    // Prepare input for control check
-    const input = options.capture({ args, result: null });
-
     const { chatId, email } = resolveIdentifiers(options, args);
     
     // Create control payload
     const payload: ControlPayload = {
-      prompt: input.input,
+      prompt: toApiString(args.length === 1 ? args[0] : args),
       chatId: chatId,
       task: options.task,
       subTask: options.subTask,
@@ -202,11 +198,13 @@ export function monitor<TArgs extends any[], TResult>(
 
         sendToAPI({
           prompt: "",
-          chatId: chatId,
-          email: email,
+          response: "",
+          chatId: toApiString(chatId),
+          email: toApiString(email),
           task: options.task,
           subTask: options.subTask,
           blocked: true,
+          tokens: 0,
         }, "monitoring", {
           retries: config.retries,
           timeout: config.timeout,
@@ -301,7 +299,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLogger("Creating payload...", "info");
 
-  const payload = {
+  const payload: MonitorPayload = {
     prompt: toApiString(prompt),
     response: toApiString(response),
     chatId: toApiString(chatId),
@@ -351,7 +349,7 @@ async function reportError<TArgs extends any[], TResult>(
     try {
       const errorInfo = createErrorInfo(functionError);
   const { chatId, email } = resolveIdentifiers(options, args);
-  const payload = {
+  const payload: MonitorPayload = {
     prompt: "",
     response: "",
     errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
