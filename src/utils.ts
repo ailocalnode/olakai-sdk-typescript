@@ -237,11 +237,19 @@ export async function sleep(ms: number): Promise<void> {
 
 export function olakaiLogger(message: string, level: "info" | "warn" | "error" = "info"): void {
   const config = getConfig();
-  if (config.verbose && level === "info") {
-    console.log(`[Olakai SDK] ${message}`);
-  } else if (config.debug && level === "warn") {
-    console.warn(`[Olakai SDK] ${message}`);
-  } else if (level === "error") {
-    console.error(`[Olakai SDK] ${message}`);
+  switch (level) {
+    case "info":
+      if (config.verbose) {
+        console.log(`[Olakai SDK] ${message}`);
+      }
+      break;
+    case "warn":
+      console.warn(`[Olakai SDK] ${message}`);
+      break;
+    case "error":
+      if (config.debug) {
+        console.error(`[Olakai SDK] ${message}`);
+      }
+      break;
   }
 }

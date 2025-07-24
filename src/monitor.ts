@@ -136,20 +136,22 @@ function resolveIdentifiers<TArgs extends any[]>(
 //TODO : Add a way to pass in a custom tasks/subtasks in the payload
 /**
  * Monitor a function and send the data to the Olakai API
+ * Always returns an async function, but can monitor both sync and async functions
  * @param options - The options for the monitored function
- * @param fn - The function to monitor
- * @returns The monitored function
+ * @param fn - The function to monitor (sync or async)
+ * @returns The monitored async function
  */
-// Overload 1: curried
+
+// Curried version
 export function monitor<TArgs extends any[], TResult>(
   options: MonitorOptions<TArgs, TResult>,
 ): (
-  fn: (...args: TArgs) => Promise<TResult>,
+  fn: (...args: TArgs) => TResult | Promise<TResult>,
 ) => (...args: TArgs) => Promise<TResult>;
 
-// Overload 2: direct
+// Direct version
 export function monitor<TArgs extends any[], TResult>(
-  fn: (...args: TArgs) => Promise<TResult>,
+  fn: (...args: TArgs) => TResult | Promise<TResult>,
   options: MonitorOptions<TArgs, TResult>,
 ): (...args: TArgs) => Promise<TResult>;
 
@@ -160,15 +162,15 @@ export function monitor<TArgs extends any[], TResult>(
 ): any {
   if (typeof arg1 === "function" && arg2) {
     // Direct form: monitor(fn, options)
-    const fn = arg1 as (...args: TArgs) => Promise<TResult>;
+    const fn = arg1;
     const options = arg2 as MonitorOptions<TArgs, TResult>;
     return monitor(options)(fn);
   }
   // Curried form: monitor(options)(fn)
   const options = arg1 as MonitorOptions<TArgs, TResult>;
-  return (fn: (...args: TArgs) => Promise<TResult>) => {
+  
+  return (fn: (...args: TArgs) => TResult | Promise<TResult>) => {
     return async (...args: TArgs): Promise<TResult> => {
-
       olakaiLogger(`Monitoring function: ${fn.name}`, "info");
       olakaiLogger(`Monitoring options: ${JSON.stringify(options)}`, "info");
       olakaiLogger(`Monitoring arguments: ${JSON.stringify(args)}`, "info");
@@ -184,7 +186,8 @@ export function monitor<TArgs extends any[], TResult>(
       } catch (error) {
         olakaiLogger(`Monitoring initialization failed: \n${error}`, "error");
         // If monitoring setup fails, still execute the function
-        return await fn(...args);
+        const result = await Promise.resolve(fn(...args));
+        return result;
       }
       olakaiLogger("Monitoring initialization completed...", "info");
 
@@ -214,7 +217,9 @@ export function monitor<TArgs extends any[], TResult>(
 
       olakaiLogger("Executing the original function...", "info");
       try {
-        result = await fn(...processedArgs);
+        // Handle both sync and async functions uniformly
+        const functionResult = fn(...processedArgs);
+        result = await Promise.resolve(functionResult);
 
         olakaiLogger("Original function executed successfully...", "info");
 
