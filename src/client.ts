@@ -10,6 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
+import { OlakaiFunctionBlocked } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -224,7 +225,7 @@ async function sendWithRetry(
     } catch (err) {
       lastError = err as Error;
 
-      olakaiLogger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
+      olakaiLogger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${lastError?.message}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -282,8 +283,15 @@ export async function sendToAPI(
     }
     }
   } else if (role === "control") {
-    const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
-    return response;
+    try {
+      const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
+      return response;
+    } catch (error) {
+      if (error instanceof OlakaiFunctionBlocked) {
+        throw error;
+      }
+      throw error;
+    }
   }
   throw new Error("[Olakai SDK] Invalid role");
 }
