@@ -203,6 +203,21 @@ export function monitor<TArgs extends any[], TResult>(
       //If we should control (block execution), throw an error
       if (shouldControlCall) {
         olakaiLogger("Function execution blocked by Olakai's Control API", "error");
+        const { chatId, email } = resolveIdentifiers(options, args)
+
+        sendToAPI({
+          prompt: "",
+          chatId: chatId,
+          email: email,
+          task: options.task,
+          subTask: options.subTask,
+          blocked: true,
+        }, "monitoring", {
+          retries: config.retries,
+          timeout: config.timeout,
+          priority: "high", // Errors always get high priority
+        });
+        
         throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
       }
 
@@ -301,6 +316,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
     ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
     ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
+    blocked: false,
     };
 
   olakaiLogger(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");

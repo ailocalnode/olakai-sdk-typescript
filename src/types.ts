@@ -12,6 +12,7 @@ export type MonitorPayload = {
   tokens?: number;
   requestTime?: number;
   errorMessage?: string;
+  blocked?: boolean;
 };
 
 /**
