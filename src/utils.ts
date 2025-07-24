@@ -231,11 +231,11 @@ export function isNodeJS(): boolean {
  * @returns A promise that resolves after the given number of milliseconds
  */
 export async function sleep(ms: number): Promise<void> {
-  olakaiLoggger(`Sleeping for ${ms}ms`, "info");
+  olakaiLogger(`Sleeping for ${ms}ms`, "info");
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function olakaiLoggger(message: string, level: "info" | "warn" | "error" = "info"): void {
+export function olakaiLogger(message: string, level: "info" | "warn" | "error" = "info"): void {
   const config = getConfig();
   if (config.verbose && level === "info") {
     console.log(`[Olakai SDK] ${message}`);

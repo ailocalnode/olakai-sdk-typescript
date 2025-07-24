@@ -8,7 +8,7 @@ import type {
 import { initStorage, isStorageEnabled } from "./queue/storage/index";
 import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
-import { ConfigBuilder, olakaiLoggger, sleep } from "./utils";
+import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
 
 let config: SDKConfig;
@@ -34,7 +34,7 @@ function initOnlineDetection() {
     // Could be enhanced with network connectivity checks if needed
     isOnline = true;
   }
-  olakaiLoggger(`Online detection initialized. Status: ${isOnline}`, "info");
+  olakaiLogger(`Online detection initialized. Status: ${isOnline}`, "info");
 }
 
 /**
@@ -76,7 +76,7 @@ export async function initClient(
   if (!config.apiKey || config.apiKey.trim() === "") {
     throw new Error("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
   }
-  olakaiLoggger(`Config: ${JSON.stringify(config)}`, "info");
+  olakaiLogger(`Config: ${JSON.stringify(config)}`, "info");
   // Initialize online detection
   initOnlineDetection();
   
@@ -92,7 +92,7 @@ export async function initClient(
   };
 
   const queueManager = await initQueueManager(queueDependencies);
-  olakaiLoggger(`Queue manager initialized successfully`, "info");
+  olakaiLogger(`Queue manager initialized successfully`, "info");
 }
 
 /**
@@ -134,30 +134,30 @@ async function makeAPICall(
 
     const responseData = await response.json() as MonitoringAPIResponse;
 
-    olakaiLoggger(`Monitoring API response status: ${response.status}`, "info");
+    olakaiLogger(`Monitoring API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
     // Handle different status codes for batch operations
     if (response.status === ErrorCode.SUCCESS) {
       // All requests succeeded
-      olakaiLoggger(`All batch requests succeeded: ${JSON.stringify(responseData)}`, "info");
+      olakaiLogger(`All batch requests succeeded: ${JSON.stringify(responseData)}`, "info");
       return responseData;
 
     } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
       // Mixed success/failure (Multi-Status)
-      olakaiLoggger(`Batch requests had mixed results: ${responseData.successCount}/${responseData.totalRequests} succeeded`, "warn");
+      olakaiLogger(`Batch requests had mixed results: ${responseData.successCount}/${responseData.totalRequests} succeeded`, "warn");
       return responseData; // Note: overall success=true even for partial failures
 
     } else if (response.status === ErrorCode.FAILED) {
       // All failed or system error
-      olakaiLoggger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
+      olakaiLogger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
       throw new Error(`Batch processing failed: ${responseData.message || response.statusText}`);
 
     } else if (!response.ok) {
       // Other error status codes
-      olakaiLoggger(`API call failed: ${JSON.stringify(payload)}`, "info");
-      olakaiLoggger(`Unexpected API response status: ${response.status}`, "warn");
+      olakaiLogger(`API call failed: ${JSON.stringify(payload)}`, "info");
+      olakaiLogger(`Unexpected API response status: ${response.status}`, "warn");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       
     } else {
@@ -188,7 +188,7 @@ async function sendWithRetry(
       if (response.success) {
         return response;
       } else if (response.failureCount && response.failureCount > 0) {
-          olakaiLoggger(
+          olakaiLogger(
             `Batch partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
             "info");
             return response;
@@ -197,7 +197,7 @@ async function sendWithRetry(
     } catch (err) {
       lastError = err as Error;
 
-      olakaiLoggger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
+      olakaiLogger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -211,7 +211,7 @@ async function sendWithRetry(
     config.onError(lastError);
   }
   
-  olakaiLoggger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
+  olakaiLogger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
   throw lastError;
 }
 
@@ -246,7 +246,7 @@ export async function sendToAPI(
     
     // Log any batch-style response information if present
     if (response.totalRequests !== undefined && response.successCount !== undefined) {
-      olakaiLoggger(
+      olakaiLogger(
         `Direct API call result: ${response.successCount}/${response.totalRequests} requests succeeded`,
         response.failureCount && response.failureCount > 0 ? "warn" : "info"
       );
@@ -289,12 +289,12 @@ async function makeControlAPICall(
 
     const responseData = await response.json() as ControlAPIResponse;
 
-    olakaiLoggger(`Control API response status: ${response.status}`, "info");
+    olakaiLogger(`Control API response status: ${response.status}`, "info");
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      olakaiLoggger(`Control API call failed: ${JSON.stringify(payload)}`, "info");
+      olakaiLogger(`Control API call failed: ${JSON.stringify(payload)}`, "info");
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }    
     // Ensure the response has the expected structure
@@ -333,7 +333,7 @@ export async function sendToControlAPI(
     } catch (err) {
       lastError = err as Error;
 
-      olakaiLoggger(`Control API attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
+      olakaiLogger(`Control API attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -347,6 +347,6 @@ export async function sendToControlAPI(
     config.onError(lastError);
   }
 
-  olakaiLoggger(`All control API retry attempts failed: ${JSON.stringify(lastError)}`, "error");
+  olakaiLogger(`All control API retry attempts failed: ${JSON.stringify(lastError)}`, "error");
   throw lastError;
 }
