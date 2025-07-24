@@ -318,6 +318,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   olakaiLogger("API call completed...", "info");
 
   //End of monitoring operations
+
   olakaiLogger("Monitoring operations completed...", "info");
 }
 
@@ -346,6 +347,7 @@ async function reportError<TArgs extends any[], TResult>(
     chatId: toApiString(chatId),
     email: toApiString(email),
   }
+
   await sendToAPI(payload, "monitoring", {
     retries: config.retries,
     timeout: config.timeout,
@@ -395,4 +397,5 @@ async function applyMiddleware<TArgs extends any[], TResult>(
     return processedResult;
   }
   throw new Error("Middleware returned null");
+
 }
