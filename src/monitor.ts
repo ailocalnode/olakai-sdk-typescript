@@ -134,7 +134,7 @@ function resolveIdentifiers<TArgs extends any[]>(
 
 //TODO : Add a way to pass in a custom tasks/subtasks in the payload
 /**
- * Monitor a function
+ * Monitor a function and send the data to the Olakai API
  * @param options - The options for the monitored function
  * @param fn - The function to monitor
  * @returns The monitored function
@@ -216,7 +216,6 @@ export function monitor<TArgs extends any[], TResult>(
       olakaiLoggger("BeforeCall middleware completed...", "info");
 
       let result: TResult;
-      let functionError: any = null;
 
       olakaiLoggger("Executing the original function...", "info");
       try {
@@ -226,46 +225,10 @@ export function monitor<TArgs extends any[], TResult>(
 
       } catch (error) {
         olakaiLoggger(`Original function failed: ${error}. \n Continuing execution...`, "error");
-        functionError = error;
-          // Handle error case monitoring
-          try {
-            // Apply error middleware
-            for (const middleware of middlewares) {
-              if (middleware.onError) {
-                await middleware.onError(functionError, processedArgs);
-              }
-            }
+        // Handle error case monitoring
+        reportError(error, processedArgs, options, config);
 
-            // Capture error data if onMonitoredFunctionError boolean is provided
-            if (options.onMonitoredFunctionError ?? true) {
-
-              const errorInfo = createErrorInfo(functionError);
-
-              const { chatId, email } = resolveIdentifiers(options, args);
-
-              const payload = {
-                prompt: "",
-                response: "",
-                errorMessage:
-                  toApiString(errorInfo.errorMessage) +
-                  toApiString(errorInfo.stackTrace),
-                chatId: toApiString(chatId),
-                email: toApiString(email),
-              };
-
-              await sendToAPI(payload, {
-                retries: config.retries,
-                timeout: config.timeout,
-                priority: "high", // Errors always get high priority
-              });
-            }
-          } catch (error) {
-            olakaiLoggger(`Error during error monitoring: ${error}.`, "error");
-          };
-
-          olakaiLoggger("Error monitoring completed...", "info");
-
-          throw functionError; // Re-throw the original error to be handled by the caller
+        throw error; // Re-throw the original error to be handled by the caller
       } 
         // Handle success case asynchronously
       makeMonitoringCall(result, processedArgs, args, options, config, start);
@@ -274,6 +237,15 @@ export function monitor<TArgs extends any[], TResult>(
   };
 }
 
+/**
+ * Make the monitoring call
+ * @param result - The result of the monitored function
+ * @param processedArgs - The processed arguments
+ * @param args - The original arguments
+ * @param options - The options for the monitored function
+ * @param config - The configuration for the monitored function
+ * @param start - The start time of the monitored function
+ */
 async function makeMonitoringCall<TArgs extends any[], TResult>(
   result: TResult,
   processedArgs: TArgs,
@@ -353,4 +325,41 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   //End of monitoring operations
   olakaiLoggger("Monitoring operations completed...", "info");
+}
+
+
+/**
+ * Report an error to the API
+ * @param functionError - The error from the monitored function
+ * @param args - The original arguments
+ * @param options - The options for the monitored function
+ * @param config - The configuration for the monitored function
+ */
+async function reportError<TArgs extends any[], TResult>(
+  functionError: any, 
+  args: TArgs, 
+  options: MonitorOptions<TArgs, TResult>, 
+  config: SDKConfig
+) {
+  if (options.onMonitoredFunctionError ?? true) {
+    try {
+      const errorInfo = createErrorInfo(functionError);
+  const { chatId, email } = resolveIdentifiers(options, args);
+  const payload = {
+    prompt: "",
+    response: "",
+    errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
+    chatId: toApiString(chatId),
+    email: toApiString(email),
+  }
+  await sendToAPI(payload, {
+    retries: config.retries,
+      timeout: config.timeout,
+      priority: "high", // Errors always get high priority
+    });
+    } catch (error) {
+      olakaiLoggger(`Error during error monitoring: ${error}.`, "error");
+    }
+    olakaiLoggger("Error monitoring completed...", "info");
+  }
 }

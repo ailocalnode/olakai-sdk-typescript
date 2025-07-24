@@ -85,8 +85,11 @@ export const capture = {
 };
 
 /**
- * Simple monitor function that automatically captures everything
+ * Simple monitor function that automatically captures everything and sends the data to the Olakai API
  * No type parameters needed - TypeScript will infer them
+ * @param fn - The function to monitor
+ * @param options - The eventual options for the monitored function
+ * @returns The monitored function
  */
 export function olakaiMonitor<T extends (...args: any[]) => any>(
   fn: T,
