@@ -3,6 +3,7 @@ import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } fr
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
 import { OlakaiFunctionBlocked } from "./exceptions";
+import { applyMiddleware } from "./middleware";
 
 // Global middleware registry
 const middlewares: Middleware<any, any>[] = [];
@@ -24,12 +25,6 @@ async function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
 ): Promise<boolean> {
-  const controlOptions = options.controlOptions;
-  
-  // If control is not configured, allow execution
-  if (!controlOptions) {
-    return false;
-  }
   
   try {
     
@@ -46,7 +41,7 @@ async function shouldControl<TArgs extends any[]>(
       subTask: options.subTask,
       tokens: 0,
       email: email,
-      overrideControlCriteria: controlOptions?.askOverride,
+      overrideControlCriteria: options.askOverride,
     };
     
     // Send control request
@@ -217,14 +212,14 @@ export function monitor<TArgs extends any[], TResult>(
           timeout: config.timeout,
           priority: "high", // Errors always get high priority
         });
-        
+
         throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
       }
 
       olakaiLogger("Applying beforeCall middleware...", "info");
 
       try {
-        processedArgs = await applyMiddleware(processedArgs, "beforeCall");
+        processedArgs = await applyMiddleware(middlewares, processedArgs, "beforeCall");
       } catch (error) {
         olakaiLogger(`BeforeCall middleware failed: ${error}. \n Continuing execution...`, "error");
       }
@@ -277,7 +272,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
     olakaiLogger("Applying afterCall middleware...", "info");
 
-    processedResult = await applyMiddleware(processedArgs, "afterCall", result) as TResult;
+    processedResult = await applyMiddleware(middlewares, processedArgs, "afterCall", result) as TResult;
   } catch (error) {
     olakaiLogger(`Error during afterCall middleware: ${error}. \n Continuing execution...`, "error");
   }
@@ -376,42 +371,3 @@ async function reportError<TArgs extends any[], TResult>(
   }
 }
 
-
-async function applyMiddleware<TArgs extends any[], TResult>(
-  args: TArgs,
-  action: "beforeCall" | "afterCall" | "error",
-  result?: TResult,
-  error?: any,
-): Promise<TArgs | TResult> {
-  olakaiLogger("Applying beforeCall middleware...", "info");
-  let processedArgs = args;
-  let processedResult = result || null;
-  try {
-  for (const middleware of middlewares) {
-    if (action === "beforeCall" && middleware.beforeCall) {
-      const middlewareResult = await middleware.beforeCall(processedArgs);
-      if (middlewareResult) {
-        processedArgs = middlewareResult;
-        }
-      }else if (action === "afterCall" && middleware.afterCall && processedResult) {
-        const middlewareResult = await middleware.afterCall(processedResult, processedArgs);
-        if (middlewareResult) {
-          processedResult = middlewareResult;
-        }
-      }else if (action === "error" && middleware.onError && error) {
-        await middleware.onError(error, processedArgs);
-      }
-    }
-  } catch (error) {
-    olakaiLogger(`Error during beforeCall middleware: ${error}. \n Continuing execution...`, "error");
-    throw error;
-  }
-  olakaiLogger("BeforeCall middleware completed...", "info");
-  if (action === "beforeCall") {
-    return processedArgs;
-  }else if (action === "afterCall" && processedResult) {
-    return processedResult;
-  }
-  throw new Error("Middleware returned null");
-
-}
