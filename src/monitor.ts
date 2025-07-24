@@ -1,7 +1,8 @@
-import { sendToAPI, sendToControlAPI, getConfig } from "./client";
+import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } from "./types";
 import type { Middleware } from "./middleware";
-import { olakaiLoggger, toApiString } from "./utils";
+import { olakaiLogger, toApiString } from "./utils";
+import { OlakaiFunctionBlocked } from "./exceptions";
 
 // Global middleware registry
 const middlewares: Middleware<any, any>[] = [];
@@ -31,7 +32,6 @@ async function shouldControl<TArgs extends any[]>(
   }
   
   try {
-    const config = getConfig();
     
     // Prepare input for control check
     const input = options.capture({ args, result: null });
@@ -41,23 +41,27 @@ async function shouldControl<TArgs extends any[]>(
     // Create control payload
     const payload: ControlPayload = {
       prompt: input.input,
+      chatId: chatId,
+      task: options.task,
+      subTask: options.subTask,
+      tokens: 0,
       email: email,
-      askedOverride: controlOptions.askOverride,
+      overrideControlCriteria: controlOptions?.askOverride,
     };
     
     // Send control request
-    const response: ControlAPIResponse = await sendToControlAPI(payload);
+    const response: ControlAPIResponse = await sendToAPI(payload, "control");
     
-    olakaiLoggger(`Control response: ${JSON.stringify(response)}`, "info");
+    olakaiLogger(`Control response: ${JSON.stringify(response)}`, "info");
     
     // If not allowed, handle the blocking
-    if (!response.allowed) {
+    if (!response.isAllowed) {
       return true;
     } 
     return false;
     
   } catch (error) {
-    olakaiLoggger(`Control call failed, disallowing execution ${error}`, "error");
+    olakaiLogger(`Control call failed, disallowing execution ${error}`, "error");
     return true; // Allow execution
   }
 }
@@ -78,10 +82,10 @@ function sanitizeData(data: any, patterns?: RegExp[]): any {
 
   try {
     const parsed = JSON.parse(serialized);
-    olakaiLoggger(`Data successfully sanitized`, "info");
+    olakaiLogger(`Data successfully sanitized`, "info");
     return parsed;
   } catch {
-    olakaiLoggger(`Data failed to sanitize`, "warn");
+    olakaiLogger(`Data failed to sanitize`, "warn");
     return "[SANITIZED]";
   }
 }
@@ -111,9 +115,9 @@ function resolveIdentifiers<TArgs extends any[]>(
   if (typeof options.chatId === "function") {
     try {
       chatId = options.chatId(args);
-      olakaiLoggger("ChatId resolved...", "info");
+      olakaiLogger("ChatId resolved...", "info");
     } catch (error) {
-      olakaiLoggger(`Error during chatId resolution: ${error}. \n Continuing execution...`, "error");
+      olakaiLogger(`Error during chatId resolution: ${error}. \n Continuing execution...`, "error");
     }
   } else {
     chatId = options.chatId || "123";
@@ -121,9 +125,9 @@ function resolveIdentifiers<TArgs extends any[]>(
   if (typeof options.email === "function") {
     try {
       email = options.email(args);
-      olakaiLoggger("Email resolved...", "info");
+      olakaiLogger("Email resolved...", "info");
     } catch (error) {
-      olakaiLoggger(`Error during userId resolution: ${error}. \n Continuing execution...`, "error");
+      olakaiLogger(`Error during userId resolution: ${error}. \n Continuing execution...`, "error");
     }
   } else {
     email = options.email || "anonymous@olakai.ai";
@@ -135,20 +139,22 @@ function resolveIdentifiers<TArgs extends any[]>(
 //TODO : Add a way to pass in a custom tasks/subtasks in the payload
 /**
  * Monitor a function and send the data to the Olakai API
+ * Always returns an async function, but can monitor both sync and async functions
  * @param options - The options for the monitored function
- * @param fn - The function to monitor
- * @returns The monitored function
+ * @param fn - The function to monitor (sync or async)
+ * @returns The monitored async function
  */
-// Overload 1: curried
+
+// Curried version
 export function monitor<TArgs extends any[], TResult>(
   options: MonitorOptions<TArgs, TResult>,
 ): (
-  fn: (...args: TArgs) => Promise<TResult>,
+  fn: (...args: TArgs) => TResult | Promise<TResult>,
 ) => (...args: TArgs) => Promise<TResult>;
 
-// Overload 2: direct
+// Direct version
 export function monitor<TArgs extends any[], TResult>(
-  fn: (...args: TArgs) => Promise<TResult>,
+  fn: (...args: TArgs) => TResult | Promise<TResult>,
   options: MonitorOptions<TArgs, TResult>,
 ): (...args: TArgs) => Promise<TResult>;
 
@@ -159,18 +165,18 @@ export function monitor<TArgs extends any[], TResult>(
 ): any {
   if (typeof arg1 === "function" && arg2) {
     // Direct form: monitor(fn, options)
-    const fn = arg1 as (...args: TArgs) => Promise<TResult>;
+    const fn = arg1;
     const options = arg2 as MonitorOptions<TArgs, TResult>;
     return monitor(options)(fn);
   }
   // Curried form: monitor(options)(fn)
   const options = arg1 as MonitorOptions<TArgs, TResult>;
-  return (fn: (...args: TArgs) => Promise<TResult>) => {
+  
+  return (fn: (...args: TArgs) => TResult | Promise<TResult>) => {
     return async (...args: TArgs): Promise<TResult> => {
-
-      olakaiLoggger(`Monitoring function: ${fn.name}`, "info");
-      olakaiLoggger(`Monitoring options: ${JSON.stringify(options)}`, "info");
-      olakaiLoggger(`Monitoring arguments: ${JSON.stringify(args)}`, "info");
+      olakaiLogger(`Monitoring function: ${fn.name}`, "info");
+      olakaiLogger(`Monitoring options: ${JSON.stringify(options)}`, "info");
+      olakaiLogger(`Monitoring arguments: ${JSON.stringify(args)}`, "info");
 
       let config: SDKConfig;
       let start: number;
@@ -181,50 +187,47 @@ export function monitor<TArgs extends any[], TResult>(
         config = getConfig();
         start = Date.now();
       } catch (error) {
-        olakaiLoggger(`Monitoring initialization failed: \n${error}`, "error");
+        olakaiLogger(`Monitoring initialization failed: \n${error}`, "error");
         // If monitoring setup fails, still execute the function
-        return await fn(...args);
+        const result = await Promise.resolve(fn(...args));
+        return result;
       }
-      olakaiLoggger("Monitoring initialization completed...", "info");
+      olakaiLogger("Monitoring initialization completed...", "info");
 
-      olakaiLoggger("Checking if we should control this call...", "info");
+      olakaiLogger("Checking if we should control this call...", "info");
 
-      const shouldControlCall = false; //await shouldControl(options, args);
+      const shouldControlCall = await shouldControl(options, args);
 
-      olakaiLoggger("Should control check completed...", "info");
+      olakaiLogger("Should control check completed...", "info");
 
       //If we should control (block execution), throw an error
       if (shouldControlCall) {
-        throw new Error("Function execution blocked by Olakai's Control API");
+        olakaiLogger("Function execution blocked by Olakai's Control API", "error");
+        throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
       }
 
-      olakaiLoggger("Applying beforeCall middleware...", "info");
+      olakaiLogger("Applying beforeCall middleware...", "info");
 
       try {
-        for (const middleware of middlewares) {
-          if (middleware.beforeCall) {
-            const result = await middleware.beforeCall(processedArgs);
-            if (result) {
-              processedArgs = result;
-            }
-          }
-        }
+        processedArgs = await applyMiddleware(processedArgs, "beforeCall");
       } catch (error) {
-        olakaiLoggger(`BeforeCall middleware failed: ${error}. \n Continuing execution...`, "error");
+        olakaiLogger(`BeforeCall middleware failed: ${error}. \n Continuing execution...`, "error");
       }
 
-      olakaiLoggger("BeforeCall middleware completed...", "info");
+      olakaiLogger("BeforeCall middleware completed...", "info");
 
       let result: TResult;
 
-      olakaiLoggger("Executing the original function...", "info");
+      olakaiLogger("Executing the original function...", "info");
       try {
-        result = await fn(...processedArgs);
+        // Handle both sync and async functions uniformly
+        const functionResult = fn(...processedArgs);
+        result = await Promise.resolve(functionResult);
 
-        olakaiLoggger("Original function executed successfully...", "info");
+        olakaiLogger("Original function executed successfully...", "info");
 
       } catch (error) {
-        olakaiLoggger(`Original function failed: ${error}. \n Continuing execution...`, "error");
+        olakaiLogger(`Original function failed: ${error}. \n Continuing execution...`, "error");
         // Handle error case monitoring
         reportError(error, processedArgs, options, config);
 
@@ -254,35 +257,26 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   config: SDKConfig,
   start: number,
 ) {
+  let processedResult: TResult = result;
   try {
 
-    olakaiLoggger("Applying afterCall middleware...", "info");
+    olakaiLogger("Applying afterCall middleware...", "info");
 
-    for (const middleware of middlewares) {
-      if (middleware.afterCall) {
-        const middlewareResult = await middleware.afterCall(
-          result,
-          processedArgs,
-        );
-        if (middlewareResult) {
-          result = middlewareResult;
-        }
-      }
-    }
+    processedResult = await applyMiddleware(processedArgs, "afterCall", result) as TResult;
   } catch (error) {
-    olakaiLoggger(`Error during afterCall middleware: ${error}. \n Continuing execution...`, "error");
+    olakaiLogger(`Error during afterCall middleware: ${error}. \n Continuing execution...`, "error");
   }
 
-  olakaiLoggger("AfterCall middleware completed...", "info");
+  olakaiLogger("AfterCall middleware completed...", "info");
 
-  olakaiLoggger("Capturing success data...", "info");
+  olakaiLogger("Capturing success data...", "info");
         // Capture success data
   const captureResult = options.capture({
     args: processedArgs,
-    result,
+    result: processedResult,
   });
 
-  olakaiLoggger("Success data captured...", "info");
+  olakaiLogger("Success data captured...", "info");
 
   const prompt = options.sanitize
     ? sanitizeData(captureResult.input, config.sanitizePatterns)
@@ -291,11 +285,11 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     ? sanitizeData(captureResult.output, config.sanitizePatterns)
     : captureResult.output;
 
-  olakaiLoggger("Resolving identifiers...", "info");
+  olakaiLogger("Resolving identifiers...", "info");
 
   const { chatId, email } = resolveIdentifiers(options, args);
 
-  olakaiLoggger("Creating payload...", "info");
+  olakaiLogger("Creating payload...", "info");
 
   const payload = {
     prompt: toApiString(prompt),
@@ -309,22 +303,23 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
     };
 
-  olakaiLoggger(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
+  olakaiLogger(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
 
   // Send to API (with batching and retry logic handled in client)
   try {
-    await sendToAPI(payload, {
-          retries: config.retries,
-          timeout: config.timeout,
-          priority: options.priority || "normal",
-        });
+    await sendToAPI(payload, "monitoring", {
+      retries: config.retries,
+      timeout: config.timeout,
+      priority: options.priority || "normal",
+    });
   } catch (error) {
-    olakaiLoggger(`Error during api call: ${error}.`, "error");
+    olakaiLogger(`Error during api call: ${error}.`, "error");
   }
-  olakaiLoggger("API call completed...", "info");
+  olakaiLogger("API call completed...", "info");
 
   //End of monitoring operations
-  olakaiLoggger("Monitoring operations completed...", "info");
+
+  olakaiLogger("Monitoring operations completed...", "info");
 }
 
 
@@ -352,14 +347,55 @@ async function reportError<TArgs extends any[], TResult>(
     chatId: toApiString(chatId),
     email: toApiString(email),
   }
-  await sendToAPI(payload, {
+
+  await sendToAPI(payload, "monitoring", {
     retries: config.retries,
-      timeout: config.timeout,
-      priority: "high", // Errors always get high priority
-    });
+    timeout: config.timeout,
+    priority: "high", // Errors always get high priority
+  });
     } catch (error) {
-      olakaiLoggger(`Error during error monitoring: ${error}.`, "error");
+      olakaiLogger(`Error during error monitoring: ${error}.`, "error");
     }
-    olakaiLoggger("Error monitoring completed...", "info");
+    olakaiLogger("Error monitoring completed...", "info");
   }
+}
+
+
+async function applyMiddleware<TArgs extends any[], TResult>(
+  args: TArgs,
+  action: "beforeCall" | "afterCall" | "error",
+  result?: TResult,
+  error?: any,
+): Promise<TArgs | TResult> {
+  olakaiLogger("Applying beforeCall middleware...", "info");
+  let processedArgs = args;
+  let processedResult = result || null;
+  try {
+  for (const middleware of middlewares) {
+    if (action === "beforeCall" && middleware.beforeCall) {
+      const middlewareResult = await middleware.beforeCall(processedArgs);
+      if (middlewareResult) {
+        processedArgs = middlewareResult;
+        }
+      }else if (action === "afterCall" && middleware.afterCall && processedResult) {
+        const middlewareResult = await middleware.afterCall(processedResult, processedArgs);
+        if (middlewareResult) {
+          processedResult = middlewareResult;
+        }
+      }else if (action === "error" && middleware.onError && error) {
+        await middleware.onError(error, processedArgs);
+      }
+    }
+  } catch (error) {
+    olakaiLogger(`Error during beforeCall middleware: ${error}. \n Continuing execution...`, "error");
+    throw error;
+  }
+  olakaiLogger("BeforeCall middleware completed...", "info");
+  if (action === "beforeCall") {
+    return processedArgs;
+  }else if (action === "afterCall" && processedResult) {
+    return processedResult;
+  }
+  throw new Error("Middleware returned null");
+
 }

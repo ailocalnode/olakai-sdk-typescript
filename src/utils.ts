@@ -23,7 +23,7 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     errors.push("API key is required");
   }
 
-  if (config.domainUrl && !isValidUrl(config.domainUrl)) {
+  if (config.monitorEndpoint && !isValidUrl(config.monitorEndpoint)) {
     errors.push("API URL must be a valid URL");
   }
 
@@ -89,8 +89,8 @@ export class ConfigBuilder {
     return this;
   }
 
-  domainUrl(url: string): ConfigBuilder {
-    this.config.domainUrl = url;
+  monitorEndpoint(url: string): ConfigBuilder {
+    this.config.monitorEndpoint = url;
     return this;
   }
 
@@ -177,7 +177,7 @@ export class ConfigBuilder {
 
     return {
       apiKey: "",
-      domainUrl: "",
+      monitorEndpoint: "",
       controlEndpoint: "",
       enableBatching: true,
       batchSize: 10,
@@ -231,17 +231,25 @@ export function isNodeJS(): boolean {
  * @returns A promise that resolves after the given number of milliseconds
  */
 export async function sleep(ms: number): Promise<void> {
-  olakaiLoggger(`Sleeping for ${ms}ms`, "info");
+  olakaiLogger(`Sleeping for ${ms}ms`, "info");
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function olakaiLoggger(message: string, level: "info" | "warn" | "error" = "info"): void {
+export function olakaiLogger(message: string, level: "info" | "warn" | "error" = "info"): void {
   const config = getConfig();
-  if (config.verbose && level === "info") {
-    console.log(`[Olakai SDK] ${message}`);
-  } else if (config.debug && level === "warn") {
-    console.warn(`[Olakai SDK] ${message}`);
-  } else if (level === "error") {
-    console.error(`[Olakai SDK] ${message}`);
+  switch (level) {
+    case "info":
+      if (config.verbose) {
+        console.log(`[Olakai SDK] ${message}`);
+      }
+      break;
+    case "warn":
+      console.warn(`[Olakai SDK] ${message}`);
+      break;
+    case "error":
+      if (config.debug) {
+        console.error(`[Olakai SDK] ${message}`);
+      }
+      break;
   }
 }

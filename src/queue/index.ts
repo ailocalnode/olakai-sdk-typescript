@@ -1,5 +1,5 @@
-import type { BatchRequest, MonitoringAPIResponse, MonitorPayload, SDKConfig } from '../types';
-import { olakaiLoggger } from '../utils';
+import type { BatchRequest, ControlAPIResponse, ControlPayload, MonitoringAPIResponse, MonitorPayload, SDKConfig } from '../types';
+import { olakaiLogger } from '../utils';
 import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from './storage/index';
 
 /**
@@ -8,7 +8,7 @@ import { getStorage, isStorageEnabled, getStorageKey, getMaxStorageSize } from '
 export interface QueueDependencies {
   config: SDKConfig;
   isOnline: () => boolean;
-  sendWithRetry: (payload: MonitorPayload[], maxRetries?: number) => Promise<MonitoringAPIResponse>;
+  sendWithRetry: (payload: MonitorPayload[] | ControlPayload, maxRetries?: number, role?: "monitoring" | "control" ) => Promise<MonitoringAPIResponse | ControlAPIResponse>;
 
 }
 
@@ -36,16 +36,16 @@ export class QueueManager {
         if (stored) {
           const parsedQueue = JSON.parse(stored);
           this.batchQueue.push(...parsedQueue);
-          olakaiLoggger(`Loaded ${parsedQueue.length} items from storage`, "info");
+          olakaiLogger(`Loaded ${parsedQueue.length} items from storage`, "info");
         }
       } catch (err) {
-        olakaiLoggger(`Failed to load from storage: ${JSON.stringify(err)}`, "warn");
+        olakaiLogger(`Failed to load from storage: ${JSON.stringify(err)}`, "warn");
       }
     }
 
     // Start processing queue if we have items and we're online
     if (this.batchQueue.length > 0 && this.dependencies.isOnline()) {
-      olakaiLoggger(`Starting batch processing`, "info");
+      olakaiLogger(`Starting batch processing`, "info");
       await this.processBatchQueue();
     }
   }
@@ -138,7 +138,7 @@ export class QueueManager {
     if (isStorageEnabled(this.dependencies.config)) {
       const storage = getStorage();
       storage.removeItem(getStorageKey(this.dependencies.config));
-      olakaiLoggger(`Cleared queue from storage`, "info");
+      olakaiLogger(`Cleared queue from storage`, "info");
     }
   }
 
@@ -146,7 +146,7 @@ export class QueueManager {
    * Flush the queue (send all pending items)
    */
   async flush(): Promise<void> {
-    olakaiLoggger(`Flushing queue`, "info");
+    olakaiLogger(`Flushing queue`, "info");
     await this.processBatchQueue();
   }
 
@@ -171,9 +171,9 @@ export class QueueManager {
         }
       }
       storage.setItem(getStorageKey(this.dependencies.config), JSON.stringify(this.batchQueue));
-      olakaiLoggger(`Persisted queue to storage`, "info");
+      olakaiLogger(`Persisted queue to storage`, "info");
     } catch (err) {
-      olakaiLoggger(`Failed to persist queue: ${JSON.stringify(err)}`, "warn");
+      olakaiLogger(`Failed to persist queue: ${JSON.stringify(err)}`, "warn");
     }
   }
 
@@ -229,11 +229,11 @@ private scheduleClearRetriesQueue(): void {
     }
 
     try {
-      const result = await this.dependencies.sendWithRetry(payloads);
+      const result = await this.dependencies.sendWithRetry(payloads, this.dependencies.config.retries, "monitoring") as MonitoringAPIResponse;
       
       if (result.success) {
         // All succeeded (no detailed results)
-        olakaiLoggger(`Batch of ${currentBatch.payload.length} items sent successfully`, "info");
+        olakaiLogger(`Batch of ${currentBatch.payload.length} items sent successfully`, "info");
         return;
       } else {
         // Can be partial success failure
@@ -255,7 +255,7 @@ private scheduleClearRetriesQueue(): void {
         return;
       }
     } catch (err) {
-      olakaiLoggger(`Batch processing failed: ${JSON.stringify(err)}`, "error");
+      olakaiLogger(`Batch processing failed: ${JSON.stringify(err)}`, "error");
       for (const payload of payloads) {
         this.addToQueue(payload, {retries: currentBatch.retries + 1, priority: currentBatch.priority});
       }
@@ -274,13 +274,13 @@ let queueManager: QueueManager | null = null;
  */
 export async function initQueueManager(dependencies: QueueDependencies): Promise<QueueManager> {
   if (queueManager) {
-    olakaiLoggger(`Queue manager already initialized, replacing with new instance`, "warn");
+    olakaiLogger(`Queue manager already initialized, replacing with new instance`, "warn");
   }
   
   queueManager = new QueueManager(dependencies);
   await queueManager.initialize();
   
-  olakaiLoggger(`Queue manager initialized with ${queueManager.getSize()} items in queue`, "info");
+  olakaiLogger(`Queue manager initialized with ${queueManager.getSize()} items in queue`, "info");
   
   return queueManager;
 }
