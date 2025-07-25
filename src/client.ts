@@ -10,6 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
+import { OlakaiFunctionBlocked } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -121,7 +122,7 @@ async function makeAPICall(
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
-
+  olakaiLogger(`Making API call to ${role} endpoint: ${config.monitorEndpoint}`, "info");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
   let url: string = "";
@@ -140,6 +141,7 @@ async function makeAPICall(
 
       signal: controller.signal,
     });
+    olakaiLogger(`API call response: ${response.status}`, "info");
     let responseData: MonitoringAPIResponse | ControlAPIResponse = {} as MonitoringAPIResponse | ControlAPIResponse;
     if (role === "monitoring") {
       responseData = await response.json() as MonitoringAPIResponse;
@@ -147,7 +149,7 @@ async function makeAPICall(
       responseData = await response.json() as ControlAPIResponse;
     }
 
-    olakaiLogger(`Monitoring API response status: ${response.status}`, "info");
+    olakaiLogger(`API response: ${JSON.stringify(responseData)}`, "info");
 
     clearTimeout(timeoutId);
 
@@ -168,7 +170,6 @@ async function makeAPICall(
         // All failed or system error
         olakaiLogger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
         throw new Error(`Batch processing failed: ${responseData.message || response.statusText}`);
-
       } else if (!response.ok) {
         // Other error status codes
         olakaiLogger(`API call failed: ${JSON.stringify(payload)}`, "info");
@@ -180,7 +181,16 @@ async function makeAPICall(
         return responseData;
       }
     } else if (role === "control") {
-      return responseData as ControlAPIResponse;
+      responseData = responseData as ControlAPIResponse;
+      if (response.status === ErrorCode.SUCCESS) {
+        return responseData;
+      } else if (!response.ok) {
+        // Other error status codes
+        olakaiLogger(`Unexpected API response status: ${response.status}`, "warn");
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      } else {
+        return responseData;
+      }
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -224,7 +234,7 @@ async function sendWithRetry(
     } catch (err) {
       lastError = err as Error;
 
-      olakaiLogger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${JSON.stringify(err)}`, "warn");
+      olakaiLogger(`Attempt ${attempt + 1}/${maxRetries + 1} failed: ${lastError?.message}`, "warn");
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s, 8s...
@@ -282,10 +292,18 @@ export async function sendToAPI(
     }
     }
   } else if (role === "control") {
-    const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
-    return response;
+    try {
+      const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
+      return response;
+    } catch (error) {
+      if (error instanceof OlakaiFunctionBlocked) {
+        throw error;
+      }
+      throw error;
+    }
+  } else {
+    throw new Error("[Olakai SDK] Invalid role");
   }
-  throw new Error("[Olakai SDK] Invalid role");
 }
 
 // Re-export queue utility functions

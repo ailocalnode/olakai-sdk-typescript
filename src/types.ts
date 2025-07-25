@@ -12,6 +12,7 @@ export type MonitorPayload = {
   tokens?: number;
   requestTime?: number;
   errorMessage?: string;
+  blocked?: boolean;
 };
 
 /**
@@ -44,14 +45,6 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   shouldScore?: boolean;
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
-  controlOptions?: ControlOptions<TArgs>; // Control configuration
-};
-
-/**
- * Configuration for control behavior
- */
-export type ControlOptions<TArgs extends any[]> = {
-  onError?: (error: any, args: TArgs) => boolean; // Handler for control API errors, return true to allow execution
   askOverride?: string[]; // List of parameters to override the control check
 };
 
@@ -121,7 +114,7 @@ export type MonitoringAPIResponse = {
  * Response for control API
  */
 export type ControlAPIResponse = {
-  isAllowed: boolean;
+  allowed: boolean;
   message?: string;
 };
 
@@ -130,5 +123,5 @@ export enum ErrorCode {
   PARTIAL_SUCCESS = 207,
   FAILED = 500,
   BAD_REQUEST = 400,
-
+  UNREACHABLE = 404,
 }

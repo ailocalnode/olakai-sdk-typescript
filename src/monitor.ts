@@ -1,8 +1,9 @@
 import { sendToAPI, getConfig } from "./client";
-import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse } from "./types";
+import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
 import { OlakaiFunctionBlocked } from "./exceptions";
+import { applyMiddleware } from "./middleware";
 
 // Global middleware registry
 const middlewares: Middleware<any, any>[] = [];
@@ -24,38 +25,28 @@ async function shouldControl<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
 ): Promise<boolean> {
-  const controlOptions = options.controlOptions;
-  
-  // If control is not configured, allow execution
-  if (!controlOptions) {
-    return false;
-  }
   
   try {
-    
-    // Prepare input for control check
-    const input = options.capture({ args, result: null });
-
     const { chatId, email } = resolveIdentifiers(options, args);
     
     // Create control payload
     const payload: ControlPayload = {
-      prompt: input.input,
+      prompt: toApiString(args.length === 1 ? args[0] : args),
       chatId: chatId,
       task: options.task,
       subTask: options.subTask,
       tokens: 0,
       email: email,
-      overrideControlCriteria: controlOptions?.askOverride,
+      overrideControlCriteria: options.askOverride,
     };
     
     // Send control request
-    const response: ControlAPIResponse = await sendToAPI(payload, "control");
+    const response: ControlAPIResponse = await sendToAPI(payload, "control") as ControlAPIResponse;
     
     olakaiLogger(`Control response: ${JSON.stringify(response)}`, "info");
     
     // If not allowed, handle the blocking
-    if (!response.isAllowed) {
+    if (!response.allowed) {
       return true;
     } 
     return false;
@@ -203,13 +194,30 @@ export function monitor<TArgs extends any[], TResult>(
       //If we should control (block execution), throw an error
       if (shouldControlCall) {
         olakaiLogger("Function execution blocked by Olakai's Control API", "error");
+        const { chatId, email } = resolveIdentifiers(options, args)
+
+        sendToAPI({
+          prompt: "",
+          response: "",
+          chatId: toApiString(chatId),
+          email: toApiString(email),
+          task: options.task,
+          subTask: options.subTask,
+          blocked: true,
+          tokens: 0,
+        }, "monitoring", {
+          retries: config.retries,
+          timeout: config.timeout,
+          priority: "high", // Errors always get high priority
+        });
+
         throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
       }
 
       olakaiLogger("Applying beforeCall middleware...", "info");
 
       try {
-        processedArgs = await applyMiddleware(processedArgs, "beforeCall");
+        processedArgs = await applyMiddleware(middlewares, processedArgs, "beforeCall");
       } catch (error) {
         olakaiLogger(`BeforeCall middleware failed: ${error}. \n Continuing execution...`, "error");
       }
@@ -262,7 +270,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
     olakaiLogger("Applying afterCall middleware...", "info");
 
-    processedResult = await applyMiddleware(processedArgs, "afterCall", result) as TResult;
+    processedResult = await applyMiddleware(middlewares, processedArgs, "afterCall", result) as TResult;
   } catch (error) {
     olakaiLogger(`Error during afterCall middleware: ${error}. \n Continuing execution...`, "error");
   }
@@ -291,7 +299,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLogger("Creating payload...", "info");
 
-  const payload = {
+  const payload: MonitorPayload = {
     prompt: toApiString(prompt),
     response: toApiString(response),
     chatId: toApiString(chatId),
@@ -301,6 +309,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
     ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
     ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
+    blocked: false,
     };
 
   olakaiLogger(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
@@ -340,7 +349,7 @@ async function reportError<TArgs extends any[], TResult>(
     try {
       const errorInfo = createErrorInfo(functionError);
   const { chatId, email } = resolveIdentifiers(options, args);
-  const payload = {
+  const payload: MonitorPayload = {
     prompt: "",
     response: "",
     errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
@@ -360,42 +369,3 @@ async function reportError<TArgs extends any[], TResult>(
   }
 }
 
-
-async function applyMiddleware<TArgs extends any[], TResult>(
-  args: TArgs,
-  action: "beforeCall" | "afterCall" | "error",
-  result?: TResult,
-  error?: any,
-): Promise<TArgs | TResult> {
-  olakaiLogger("Applying beforeCall middleware...", "info");
-  let processedArgs = args;
-  let processedResult = result || null;
-  try {
-  for (const middleware of middlewares) {
-    if (action === "beforeCall" && middleware.beforeCall) {
-      const middlewareResult = await middleware.beforeCall(processedArgs);
-      if (middlewareResult) {
-        processedArgs = middlewareResult;
-        }
-      }else if (action === "afterCall" && middleware.afterCall && processedResult) {
-        const middlewareResult = await middleware.afterCall(processedResult, processedArgs);
-        if (middlewareResult) {
-          processedResult = middlewareResult;
-        }
-      }else if (action === "error" && middleware.onError && error) {
-        await middleware.onError(error, processedArgs);
-      }
-    }
-  } catch (error) {
-    olakaiLogger(`Error during beforeCall middleware: ${error}. \n Continuing execution...`, "error");
-    throw error;
-  }
-  olakaiLogger("BeforeCall middleware completed...", "info");
-  if (action === "beforeCall") {
-    return processedArgs;
-  }else if (action === "afterCall" && processedResult) {
-    return processedResult;
-  }
-  throw new Error("Middleware returned null");
-
-}
