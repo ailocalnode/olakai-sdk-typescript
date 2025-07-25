@@ -292,8 +292,9 @@ export async function sendToAPI(
       }
       throw error;
     }
+  } else {
+    throw new Error("[Olakai SDK] Invalid role");
   }
-  throw new Error("[Olakai SDK] Invalid role");
 }
 
 // Re-export queue utility functions

@@ -202,6 +202,7 @@ export function createConfig(): ConfigBuilder {
 }
 
 export function toApiString(val: any): string {
+  try {
   if (typeof val === "string") return val;
   if (val && typeof val === "object") {
     // Option 1: key-value pairs
@@ -211,7 +212,16 @@ export function toApiString(val: any): string {
     // Option 2: JSON
     // return JSON.stringify(val);
   }
-  return String(val);
+    return String(val);
+  } catch (error) {
+    olakaiLogger(`Error converting value to string: ${error}`, "error");
+    try {
+      return JSON.stringify(val);
+    } catch (error) {
+      olakaiLogger(`Error converting value to string: ${error}`, "error");
+      return String(val);
+    }
+  }
 }
 
 /**

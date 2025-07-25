@@ -41,7 +41,7 @@ async function shouldControl<TArgs extends any[]>(
     };
     
     // Send control request
-    const response: ControlAPIResponse = await sendToAPI(payload, "control");
+    const response: ControlAPIResponse = await sendToAPI(payload, "control") as ControlAPIResponse;
     
     olakaiLogger(`Control response: ${JSON.stringify(response)}`, "info");
     
