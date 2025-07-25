@@ -123,5 +123,5 @@ export enum ErrorCode {
   PARTIAL_SUCCESS = 207,
   FAILED = 500,
   BAD_REQUEST = 400,
-
+  UNREACHABLE = 404,
 }

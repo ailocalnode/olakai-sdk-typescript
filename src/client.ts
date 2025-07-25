@@ -170,7 +170,6 @@ async function makeAPICall(
         // All failed or system error
         olakaiLogger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
         throw new Error(`Batch processing failed: ${responseData.message || response.statusText}`);
-
       } else if (!response.ok) {
         // Other error status codes
         olakaiLogger(`API call failed: ${JSON.stringify(payload)}`, "info");
@@ -182,7 +181,16 @@ async function makeAPICall(
         return responseData;
       }
     } else if (role === "control") {
-      return responseData as ControlAPIResponse;
+      responseData = responseData as ControlAPIResponse;
+      if (response.status === ErrorCode.SUCCESS) {
+        return responseData;
+      } else if (!response.ok) {
+        // Other error status codes
+        olakaiLogger(`Unexpected API response status: ${response.status}`, "warn");
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      } else {
+        return responseData;
+      }
     }
   } catch (err) {
     clearTimeout(timeoutId);
