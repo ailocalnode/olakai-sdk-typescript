@@ -46,7 +46,7 @@ async function shouldControl<TArgs extends any[]>(
     olakaiLogger(`Control response: ${JSON.stringify(response)}`, "info");
     
     // If not allowed, handle the blocking
-    if (!response.isAllowed) {
+    if (!response.allowed) {
       return true;
     } 
     return false;

@@ -114,7 +114,7 @@ export type MonitoringAPIResponse = {
  * Response for control API
  */
 export type ControlAPIResponse = {
-  isAllowed: boolean;
+  allowed: boolean;
   message?: string;
 };
 
