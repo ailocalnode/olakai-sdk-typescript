@@ -122,7 +122,7 @@ async function makeAPICall(
   if (!config.apiKey) {
     throw new Error("[Olakai SDK] API key is not set");
   }
-
+  olakaiLogger(`Making API call to ${role} endpoint: ${config.monitorEndpoint}`, "info");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
   let url: string = "";
@@ -141,6 +141,7 @@ async function makeAPICall(
 
       signal: controller.signal,
     });
+    olakaiLogger(`API call response: ${response.status}`, "info");
     let responseData: MonitoringAPIResponse | ControlAPIResponse = {} as MonitoringAPIResponse | ControlAPIResponse;
     if (role === "monitoring") {
       responseData = await response.json() as MonitoringAPIResponse;
@@ -148,7 +149,7 @@ async function makeAPICall(
       responseData = await response.json() as ControlAPIResponse;
     }
 
-    olakaiLogger(`Monitoring API response status: ${response.status}`, "info");
+    olakaiLogger(`API response: ${JSON.stringify(responseData)}`, "info");
 
     clearTimeout(timeoutId);
 
