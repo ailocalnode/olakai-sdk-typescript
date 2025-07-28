@@ -62,7 +62,6 @@ export async function initClient(
   configBuilder.enableStorage(options.enableStorage || true);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
   configBuilder.maxStorageSize(options.maxStorageSize || 1000000);
-  configBuilder.onError(options.onError || (() => {}));
   configBuilder.sanitizePatterns(options.sanitizePatterns || []);
   configBuilder.version(options.version || packageJson.version);
   configBuilder.debug(options.debug || false);
@@ -242,12 +241,7 @@ async function sendWithRetry(
         await sleep(delay);
       }
     }
-  } 
-
-  if (config.onError && lastError) {
-    config.onError(lastError);
-  }
-  
+  }   
   olakaiLogger(`All retry attempts failed: ${JSON.stringify(lastError)}`, "error");
   throw lastError;
 }

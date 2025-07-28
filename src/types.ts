@@ -72,7 +72,6 @@ export type SDKConfig = {
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  
-  onError: (error: Error) => void;
   sanitizePatterns: RegExp[];
   debug: boolean;
   verbose: boolean;

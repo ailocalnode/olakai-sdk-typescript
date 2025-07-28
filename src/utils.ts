@@ -149,11 +149,6 @@ export class ConfigBuilder {
     return this;
   }
 
-  onError(handler: (error: Error) => void): ConfigBuilder {
-    this.config.onError = handler;
-    return this;
-  }
-
   storageType(type: StorageType = StorageType.AUTO): ConfigBuilder {
     this.config.storageType = type;
     return this;
@@ -187,7 +182,6 @@ export class ConfigBuilder {
       enableStorage: true,
       storageKey: "olakai-sdk-queue",
       maxStorageSize: 1000000,
-      onError: (_error: Error) => {},
       sanitizePatterns: DEFAULT_SANITIZE_PATTERNS,
       debug: false,
       verbose: false,
