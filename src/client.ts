@@ -56,7 +56,7 @@ export async function initClient(
   configBuilder.controlEndpoint(`${domainUrl}/api/control/prompt`);
   configBuilder.enableBatching(options.enableBatching || true);
   configBuilder.batchSize(options.batchSize || 10);
-  configBuilder.batchTimeout(options.batchTimeout || 5000);
+  configBuilder.batchTime(options.batchTime || 5000);
   configBuilder.retries(options.retries || 4);
   configBuilder.timeout(options.timeout || 20000);
   configBuilder.enableStorage(options.enableStorage || true);

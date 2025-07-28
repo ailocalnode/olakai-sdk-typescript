@@ -34,8 +34,8 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
     errors.push("Batch size must be between 1 and 1000");
   }
 
-  if (config.batchTimeout !== undefined && config.batchTimeout < 0) {
-    errors.push("Batch timeout must be non-negative");
+  if (config.batchTime !== undefined && config.batchTime < 0) {
+    errors.push("Batch time must be non-negative");
   }
 
   if (
@@ -114,8 +114,8 @@ export class ConfigBuilder {
     return this;
   }
 
-  batchTimeout(timeout: number): ConfigBuilder {
-    this.config.batchTimeout = timeout;
+  batchTime(time: number): ConfigBuilder {
+    this.config.batchTime = time;
     return this;
   }
 
@@ -176,7 +176,7 @@ export class ConfigBuilder {
       controlEndpoint: "",
       enableBatching: true,
       batchSize: 10,
-      batchTimeout: 5000,
+      batchTime: 5000,
       retries: 3,
       timeout: 10000,
       enableStorage: true,

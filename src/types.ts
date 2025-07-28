@@ -64,7 +64,7 @@ export type SDKConfig = {
   version: string;
   enableBatching: boolean;
   batchSize: number;
-  batchTimeout: number;
+  batchTime: number; // Time to wait before processing the next batch
   retries: number;
   timeout: number;
   enableStorage: boolean; // Whether to enable storage at all
