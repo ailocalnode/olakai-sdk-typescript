@@ -35,7 +35,7 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
     input: any;
     output: any;
   };
-  onMonitoredFunctionError?: boolean;
+  onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
   email?: string | ((args: TArgs) => string);
