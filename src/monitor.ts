@@ -134,6 +134,8 @@ function resolveIdentifiers<TArgs extends any[]>(
  * @param options - The options for the monitored function
  * @param fn - The function to monitor (sync or async)
  * @returns The monitored async function
+ * @throws {OlakaiFunctionBlocked} if the function is blocked by Olakai's Control API
+ * @throws {Error} throw the original function's error if the function fails
  */
 
 // Curried version

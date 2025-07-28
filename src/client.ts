@@ -43,6 +43,8 @@ function initOnlineDetection() {
  * @param apiKey - The API key
  * @param domainUrl - The domain URL
  * @param options - The extra options for the SDKConfig
+ * @throws {URLConfigurationError} if the API URL is not set
+ * @throws {APIKeyMissingError} if the API key is not set
  */
 export async function initClient(
   apiKey: string,
@@ -101,6 +103,7 @@ export async function initClient(
 /**
  * Get the current configuration
  * @returns The current configuration
+ * @throws {ConfigNotInitializedError} if the config is not initialized
  */
 export function getConfig(): SDKConfig {
   if (!config) {
@@ -112,7 +115,11 @@ export function getConfig(): SDKConfig {
 /**
  * Make an API call to the configured endpoint
  * @param payload - The payload to send to the endpoint
+ * @param role - The role of the API call
  * @returns A promise that resolves to the API response
+ * @throws {APIKeyMissingError} if the API key is not set
+ * @throws {HTTPError} if the API call fails
+ * @throws {Error} if the internal logic fails
  */
 async function makeAPICall(
   payload: MonitorPayload[] | ControlPayload,
