@@ -196,7 +196,7 @@ export function monitor<TArgs extends any[], TResult>(
         olakaiLogger("Function execution blocked by Olakai's Control API", "error");
         const { chatId, email } = resolveIdentifiers(options, args)
 
-        sendToAPI({
+        const payload: MonitorPayload = {
           prompt: "",
           response: "",
           chatId: toApiString(chatId),
@@ -205,7 +205,9 @@ export function monitor<TArgs extends any[], TResult>(
           subTask: options.subTask,
           blocked: true,
           tokens: 0,
-        }, "monitoring", {
+        }
+
+        sendToAPI(payload, "monitoring", {
           retries: config.retries,
           timeout: config.timeout,
           priority: "high", // Errors always get high priority
