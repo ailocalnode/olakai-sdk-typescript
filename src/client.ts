@@ -10,7 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
-import { OlakaiFunctionBlocked } from "./exceptions";
+import { APIKeyMissingError, ConfigNotInitializedError, OlakaiFunctionBlocked, URLConfigurationError } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -71,13 +71,13 @@ export async function initClient(
   
   // Validate required configuration
   if (!config.monitorEndpoint || config.monitorEndpoint === "/api/monitoring/prompt") {
-    throw new Error("[Olakai SDK] API URL is not set. Please provide a valid monitorEndpoint in the configuration.");
+    throw new URLConfigurationError("[Olakai SDK] API URL is not set. Please provide a valid monitorEndpoint in the configuration.");
   }
   if (!config.controlEndpoint || config.controlEndpoint === "/api/control/prompt") {
-    throw new Error("[Olakai SDK] API URL is not set. Please provide a valid controlEndpoint in the configuration.");
+    throw new URLConfigurationError("[Olakai SDK] API URL is not set. Please provide a valid controlEndpoint in the configuration.");
   }
   if (!config.apiKey || config.apiKey.trim() === "") {
-    throw new Error("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
+    throw new APIKeyMissingError("[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.");
   }
   olakaiLogger(`Config: ${JSON.stringify(config)}`, "info");
   // Initialize online detection
@@ -104,7 +104,7 @@ export async function initClient(
  */
 export function getConfig(): SDKConfig {
   if (!config) {
-    throw new Error("[Olakai SDK] Config is not initialized");
+    throw new ConfigNotInitializedError("[Olakai SDK] Config is not initialized");
   }
   return config;
 }
