@@ -134,6 +134,8 @@ function resolveIdentifiers<TArgs extends any[]>(
  * @param options - The options for the monitored function
  * @param fn - The function to monitor (sync or async)
  * @returns The monitored async function
+ * @throws {OlakaiFunctionBlocked} if the function is blocked by Olakai's Control API
+ * @throws {Error} throw the original function's error if the function fails
  */
 
 // Curried version
@@ -196,7 +198,7 @@ export function monitor<TArgs extends any[], TResult>(
         olakaiLogger("Function execution blocked by Olakai's Control API", "error");
         const { chatId, email } = resolveIdentifiers(options, args)
 
-        sendToAPI({
+        const payload: MonitorPayload = {
           prompt: "",
           response: "",
           chatId: toApiString(chatId),
@@ -205,7 +207,9 @@ export function monitor<TArgs extends any[], TResult>(
           subTask: options.subTask,
           blocked: true,
           tokens: 0,
-        }, "monitoring", {
+        }
+
+        sendToAPI(payload, "monitoring", {
           retries: config.retries,
           timeout: config.timeout,
           priority: "high", // Errors always get high priority
@@ -308,7 +312,6 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     requestTime: Number(Date.now() - start),
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
     ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
-    ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
     blocked: false,
     };
 

@@ -4,7 +4,6 @@
 export type MonitorPayload = {
   email?: string;
   chatId?: string;
-  shouldScore?: boolean;
   task?: string;
   subTask?: string;
   prompt: string;
@@ -36,13 +35,12 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
     input: any;
     output: any;
   };
-  onMonitoredFunctionError?: boolean;
+  onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
   email?: string | ((args: TArgs) => string);
   task?: string;
   subTask?: string;
-  shouldScore?: boolean;
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   askOverride?: string[]; // List of parameters to override the control check
@@ -66,7 +64,7 @@ export type SDKConfig = {
   version: string;
   enableBatching: boolean;
   batchSize: number;
-  batchTimeout: number;
+  batchTime: number; // Time to wait before processing the next batch
   retries: number;
   timeout: number;
   enableStorage: boolean; // Whether to enable storage at all
@@ -74,7 +72,6 @@ export type SDKConfig = {
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  
-  onError: (error: Error) => void;
   sanitizePatterns: RegExp[];
   debug: boolean;
   verbose: boolean;

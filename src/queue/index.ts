@@ -185,7 +185,7 @@ export class QueueManager {
 
     this.batchTimer = setTimeout(() => {
       this.processBatchQueue();
-    }, this.dependencies.config.batchTimeout);
+    }, this.dependencies.config.batchTime);
   }
 
   /**
@@ -196,7 +196,7 @@ private scheduleClearRetriesQueue(): void {
 
   this.clearRetriesTimer = setTimeout(() => {
     this.clearRetriesQueue();
-  }, this.dependencies.config.batchTimeout);
+  }, this.dependencies.config.batchTime);
 }
   /**
    * The core batching logic - simplified for easier maintenance

@@ -186,7 +186,7 @@ const generateSupportResponse = olakaiMonitor(
         {
           role: "user",
           content: `Customer message: ${customerMessage}\nOrder history: ${JSON.stringify(
-            orderHistory
+            orderHistory,
           )}`,
         },
       ],
@@ -199,7 +199,7 @@ const generateSupportResponse = olakaiMonitor(
   {
     task: "Customer service", // Optional: give it a task
     subtask: "Generate Support Response", // Optional: give it a subtask
-  }
+  },
 );
 
 // Usage example
@@ -229,7 +229,7 @@ const generatePersonalizedResponse = olakaiMonitor(
   async (
     customerMessage: string,
     customerEmail: string,
-    chatSessionId: string
+    chatSessionId: string,
   ) => {
     const systemPrompt = `You are a helpful customer support agent. 
     Respond professionally and empathetically to customer inquiries.
@@ -255,13 +255,13 @@ const generatePersonalizedResponse = olakaiMonitor(
     subtask: "Generate Personalized Response", // Optional: give it a subtask
     getUserId: (args) => args[1], // Get userId from customer email
     getChatId: (args) => args[2], // Get chatId from session ID
-  }
+  },
 );
 
 await generatePersonalizedResponse(
   "I need help with my account",
   "customer@example.com",
-  "chat-123"
+  "chat-123",
 );
 ```
 
@@ -282,7 +282,7 @@ const analyzeCustomerSentiment = olakaiMonitor(
   async (
     customerMessage: string,
     customerEmail: string,
-    chatSessionId: string
+    chatSessionId: string,
   ) => {
     const systemPrompt = `You are a customer support agent analyzing customer sentiment.
     Respond with a sentiment analysis and appropriate support response.
@@ -309,13 +309,13 @@ const analyzeCustomerSentiment = olakaiMonitor(
     getUserId: (args) => args[1], // Get userId from customer email
     getChatId: (args) => args[2], // Get chatId from session ID
     shouldScore: true, // Enable prompt scoring for sentiment analysis
-  }
+  },
 );
 
 await analyzeCustomerSentiment(
   "I'm very frustrated with your service",
   "customer@example.com",
-  "chat-456"
+  "chat-456",
 );
 ```
 
@@ -343,25 +343,7 @@ const monitorCustom = olakaiMonitor(
   capture.custom({
     input: (args) => ({ email: args[0] }),
     output: (result) => ({ success: result.success }),
-  })
-);
-```
-
-### Error Handling Made Easy
-
-```typescript
-const robustFunction = olakaiMonitor(
-  async (data: any) => {
-    // This might throw an error
-    return await riskyOperation(data);
-  },
-  {
-    task: "risky-operation",
-    onError: (error, args) => ({
-      input: args[0],
-      output: { error: error.message },
-    }),
-  }
+  }),
 );
 ```
 
@@ -388,26 +370,19 @@ const testFunction =  olakaiAdvancedMonitor(
 
 ```typescript
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  task?: string;
-  subTask?: string;
-  shouldScore?: boolean;
   capture: (ctx: { args: TArgs; result: TResult }) => {
     input: any;
     output: any;
   };
-  onError?: (
-    error: any,
-    args: TArgs
-  ) => {
-    input: any;
-    output: any;
-  };
+  onMonitoredFunctionError?: boolean; //// Whether to send the function's error to Olakai if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
-  userId?: string | ((args: TArgs) => string);
+  email?: string | ((args: TArgs) => string);
+  task?: string;
+  subTask?: string;
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
-  control?: ControlOptions<TArgs>; // Control configuration
+  askOverride?: string[]; // List of parameters to override the control check (not implemented yet)
 };
 ```
 
@@ -438,7 +413,7 @@ const loginUser = olakaiAdvancedMonitor(
     priority: "high", // queue priority
     task: "Authentication",
     subTask: "user-login",
-  }
+  },
 );
 
 await loginUser("user@example.com", "session-123");
@@ -466,7 +441,7 @@ const controlledFunction = olakaiAdvancedMonitor(
         throw new Error(`Access denied: ${response.reason}`);
       },
     },
-  }
+  },
 );
 
 await controlledFunction("sensitive-operation");
