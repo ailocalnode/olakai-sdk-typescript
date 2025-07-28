@@ -308,7 +308,6 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     requestTime: Number(Date.now() - start),
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
     ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
-    ...((options.shouldScore !== undefined) ? { shouldScore: options.shouldScore } : {}),
     blocked: false,
     };
 

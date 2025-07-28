@@ -4,7 +4,6 @@
 export type MonitorPayload = {
   email?: string;
   chatId?: string;
-  shouldScore?: boolean;
   task?: string;
   subTask?: string;
   prompt: string;
@@ -42,7 +41,6 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
   email?: string | ((args: TArgs) => string);
   task?: string;
   subTask?: string;
-  shouldScore?: boolean;
   sanitize?: boolean; // Whether to sanitize sensitive data
   priority?: "low" | "normal" | "high"; // Priority for batching
   askOverride?: string[]; // List of parameters to override the control check
