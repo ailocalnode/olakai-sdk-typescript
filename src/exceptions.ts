@@ -47,3 +47,12 @@ export class ConfigNotInitializedError extends OlakaiSDKError {
     super(message);
   }
 }
+
+/**
+ * HTTPError is thrown when an HTTP error occurs.
+ */
+export class HTTPError extends OlakaiSDKError {
+  constructor(message: string) {
+    super(message);
+  }
+}

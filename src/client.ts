@@ -10,7 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
-import { APIKeyMissingError, ConfigNotInitializedError, OlakaiFunctionBlocked, URLConfigurationError } from "./exceptions";
+import { APIKeyMissingError, ConfigNotInitializedError, HTTPError, OlakaiFunctionBlocked, URLConfigurationError } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -119,7 +119,7 @@ async function makeAPICall(
   role: "monitoring" | "control" = "monitoring",
 ): Promise<MonitoringAPIResponse | ControlAPIResponse> {
   if (!config.apiKey) {
-    throw new Error("[Olakai SDK] API key is not set");
+    throw new APIKeyMissingError("[Olakai SDK] API key is not set");
   }
   olakaiLogger(`Making API call to ${role} endpoint: ${config.monitorEndpoint}`, "info");
   const controller = new AbortController();
@@ -169,11 +169,12 @@ async function makeAPICall(
         // All failed or system error
         olakaiLogger(`All batch requests failed: ${JSON.stringify(responseData)}`, "error");
         throw new Error(`Batch processing failed: ${responseData.message || response.statusText}`);
+
       } else if (!response.ok) {
         // Other error status codes
         olakaiLogger(`API call failed: ${JSON.stringify(payload)}`, "info");
         olakaiLogger(`Unexpected API response status: ${response.status}`, "warn");
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new HTTPError(`HTTP ${response.status}: ${response.statusText}`);
         
       } else {
         // Legacy support for other 2xx status codes
@@ -186,7 +187,7 @@ async function makeAPICall(
       } else if (!response.ok) {
         // Other error status codes
         olakaiLogger(`Unexpected API response status: ${response.status}`, "warn");
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new HTTPError(`HTTP ${response.status}: ${response.statusText}`);
       } else {
         return responseData;
       }
@@ -266,7 +267,7 @@ export async function sendToAPI(
   } = {},
 ) {
   if (!config.apiKey) {
-    throw new Error("[Olakai SDK] API key is not set");
+    throw new APIKeyMissingError("[Olakai SDK] API key is not set");
   }
   if (role === "monitoring") { 
   if (config.enableBatching) {
