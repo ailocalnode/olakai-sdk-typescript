@@ -22,6 +22,24 @@ export class OlakaiFunctionBlocked extends OlakaiSDKError {
 }
 
 /**
+ * OlakaiFirewallBlocked is thrown when a function is blocked by Olakai's Firewall.
+ */
+export class OlakaiFirewallBlocked extends OlakaiFunctionBlocked {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/**
+ * OlakaiPersonaBlocked is thrown when a function is blocked by Olakai's Persona.
+ */
+export class OlakaiPersonaBlocked extends OlakaiFunctionBlocked {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/**
  * APIKeyMissingError is thrown when an API key is missing.
  */
 export class APIKeyMissingError extends OlakaiSDKError {

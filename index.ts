@@ -29,3 +29,8 @@ export {
 export {
   DEFAULT_SANITIZE_PATTERNS,
 } from "./src/utils";
+
+export {
+  OlakaiFunctionBlocked,
+  OlakaiSDKError,
+} from "./src/exceptions";

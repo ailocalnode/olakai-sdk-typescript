@@ -2,7 +2,7 @@ import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
-import { OlakaiFunctionBlocked } from "./exceptions";
+import { OlakaiFirewallBlocked, OlakaiFunctionBlocked, OlakaiPersonaBlocked } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
 // Global middleware registry
@@ -21,10 +21,10 @@ export function removeMiddleware(name: string) {
   }
 }
 
-async function shouldControl<TArgs extends any[]>(
+async function shouldAllowCall<TArgs extends any[]>(
   options: MonitorOptions<TArgs, any>,
   args: TArgs,
-): Promise<boolean> {
+): Promise<ControlAPIResponse> {
   
   try {
     const { chatId, email } = resolveIdentifiers(options, args);
@@ -47,13 +47,17 @@ async function shouldControl<TArgs extends any[]>(
     
     // If not allowed, handle the blocking
     if (!response.allowed) {
-      return true;
+      return response;
     } 
-    return false;
+    return response;
     
   } catch (error) {
     olakaiLogger(`Control call failed, disallowing execution ${error}`, "error");
-    return true; // Allow execution
+    return {
+      allowed: false,
+      detectedSensitivity: [],
+      isAllowedPersona: false,
+    }; 
   }
 }
 
@@ -189,17 +193,17 @@ export function monitor<TArgs extends any[], TResult>(
 
       olakaiLogger("Checking if we should control this call...", "info");
 
-      const shouldControlCall = await shouldControl(options, args);
+      const shouldAllow = await shouldAllowCall(options, args);
 
       olakaiLogger("Should control check completed...", "info");
 
       //If we should control (block execution), throw an error
-      if (shouldControlCall) {
+      if (!shouldAllow.allowed) {
         olakaiLogger("Function execution blocked by Olakai's Control API", "error");
         const { chatId, email } = resolveIdentifiers(options, args)
 
         const payload: MonitorPayload = {
-          prompt: "",
+          prompt: toApiString(args.length === 1 ? args[0] : args),
           response: "",
           chatId: toApiString(chatId),
           email: toApiString(email),
@@ -215,7 +219,13 @@ export function monitor<TArgs extends any[], TResult>(
           priority: "high", // Errors always get high priority
         });
 
-        throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
+        if (shouldAllow.detectedSensitivity.length > 0) {
+          throw new OlakaiFirewallBlocked(`Function execution blocked by Olakai's Control API: ${shouldAllow.detectedSensitivity.join(", ")} detected`);
+        } else if (!shouldAllow.isAllowedPersona) {
+          throw new OlakaiPersonaBlocked("Function execution blocked by Olakai's Control API: Persona not allowed");
+        } else {
+          throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
+        }
       }
 
       olakaiLogger("Applying beforeCall middleware...", "info");
