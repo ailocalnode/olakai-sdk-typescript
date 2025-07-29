@@ -267,60 +267,6 @@ await generatePersonalizedResponse(
 
 **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
 
-### Obtain Scoring of the Prompt
-
-```typescript
-import { olakaiMonitor } from "@olakai/sdk";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Monitor customer support with prompt scoring
-const analyzeCustomerSentiment = olakaiMonitor(
-  async (
-    customerMessage: string,
-    customerEmail: string,
-    chatSessionId: string,
-  ) => {
-    const systemPrompt = `You are a customer support agent analyzing customer sentiment.
-    Respond with a sentiment analysis and appropriate support response.
-    Be empathetic and professional in your analysis.`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: `Customer message: ${customerMessage}\nCustomer email: ${customerEmail}`,
-        },
-      ],
-      max_tokens: 300,
-      temperature: 0.5,
-    });
-
-    return completion.choices[0].message.content;
-  },
-  {
-    task: "Customer service", // Optional: give it a task
-    subtask: "Analyze Customer Sentiment", // Optional: give it a subtask
-    getUserId: (args) => args[1], // Get userId from customer email
-    getChatId: (args) => args[2], // Get chatId from session ID
-    shouldScore: true, // Enable prompt scoring for sentiment analysis
-  },
-);
-
-await analyzeCustomerSentiment(
-  "I'm very frustrated with your service",
-  "customer@example.com",
-  "chat-456",
-);
-```
-
-**What it does?** This feature lets you specify if the "prompt" (so the args of the function you monitor), should get a "prompting score", the same way Olakai is doing it for standard prompts in the UNO product.
-
 ## Common Patterns
 
 ### Capture Only What You Need
@@ -353,7 +299,7 @@ const monitorCustom = olakaiMonitor(
 
 ### Advanced Monitoring
 
-Sometimes you need fine-grained control. The ` olakaiAdvancedMonitor` function gives you full access to all monitoring options:
+Sometimes you need fine-grained control. The `olakaiAdvancedMonitor` function gives you full access to all monitoring options:
 
 ```typescript
 import { olakaiAdvancedMonitor } from "@olakai/sdk";
