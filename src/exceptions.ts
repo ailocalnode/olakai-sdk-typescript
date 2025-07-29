@@ -16,26 +16,13 @@ export class OlakaiSDKError extends Error {
  * OlakaiFunctionBlocked is thrown when a function is blocked by Olakai's Control API.
  */
 export class OlakaiFunctionBlocked extends OlakaiSDKError {
-  constructor(message: string) {
+  details: {
+    detectedSensitivity: string[];
+    isAllowedPersona: boolean;
+  };
+  constructor(message: string, details: { detectedSensitivity: string[]; isAllowedPersona: boolean }) {
     super(message);
-  }
-}
-
-/**
- * OlakaiFirewallBlocked is thrown when a function is blocked by Olakai's Firewall.
- */
-export class OlakaiFirewallBlocked extends OlakaiFunctionBlocked {
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-/**
- * OlakaiPersonaBlocked is thrown when a function is blocked by Olakai's Persona.
- */
-export class OlakaiPersonaBlocked extends OlakaiFunctionBlocked {
-  constructor(message: string) {
-    super(message);
+    this.details = details;
   }
 }
 

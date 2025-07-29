@@ -2,7 +2,7 @@ import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
-import { OlakaiFirewallBlocked, OlakaiFunctionBlocked, OlakaiPersonaBlocked } from "./exceptions";
+import { OlakaiFunctionBlocked } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
 // Global middleware registry
@@ -221,13 +221,7 @@ export function monitor<TArgs extends any[], TResult>(
           priority: "high", // Errors always get high priority
         });
 
-        if (shouldAllow.details.detectedSensitivity.length > 0) {
-          throw new OlakaiFirewallBlocked(`Function execution blocked by Olakai's Control API: ${shouldAllow.details.detectedSensitivity.join(", ")} detected`);
-        } else if (!shouldAllow.details.isAllowedPersona) {
-          throw new OlakaiPersonaBlocked("Function execution blocked by Olakai's Control API: Persona not allowed");
-        } else {
-          throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
-        }
+        throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API", shouldAllow.details);
       }
 
       olakaiLogger("Applying beforeCall middleware...", "info");
