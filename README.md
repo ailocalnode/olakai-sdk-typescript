@@ -325,6 +325,24 @@ try {
 }
 ```
 
+### OlakaiFunctionBlocked Structure
+
+The `OlakaiFunctionBlocked` exception contains detailed information about why the function was blocked:
+
+```typescript
+class OlakaiFunctionBlocked extends Error {
+  details: {
+    detectedSensitivity: string[]; // Array of detected sensitive content types (PII, PHI, CODE, SECRET)
+    isAllowedPersona: boolean; // Whether the user is authorized (true or false based on the user persona)
+  };
+}
+```
+
+**Properties:**
+
+- `detectedSensitivity`: Array of strings identifying what sensitive content was detected (e.g., `["PII", "PHI", "CODE"]`)
+- `isAllowedPersona`: Boolean indicating if the user has permission to perform this action
+
 ### Web Application Error Handling
 
 Here's how to handle blocked requests in Express.js routes:
@@ -569,33 +587,6 @@ This will log detailed information about what the SDK is doing.
 
 ---
 
-## API Reference
-
-### Simple Functions
-
-| Function                             | Description               | Use Case               |
-| ------------------------------------ | ------------------------- | ---------------------- |
-| `olakaiMonitor(fn, options?)`        | Auto-capture with options | Most common use case   |
-| `olakaiAdvancedMonitor(fn, options)` | Advanced configuration    | For specific use-cases |
-
-### Helper Objects
-
-| Helper             | Description            | Example                 |
-| ------------------ | ---------------------- | ----------------------- |
-| `capture.all()`    | Capture input + output | Default behavior        |
-| `capture.input()`  | Capture only inputs    | Sensitive outputs       |
-| `capture.output()` | Capture only outputs   | Sensitive inputs        |
-| `capture.custom()` | Custom capture logic   | Complex data extraction |
-
-### Utilities
-
-- `getConfig()` - Get current SDK configuration
-- `getQueueSize()` - Check request queue size
-- `clearQueue()` - Clear pending requests
-- `flushQueue()` - Send all queued requests immediately
-
----
-
 ## Troubleshooting
 
 ### Common Issues
@@ -627,5 +618,5 @@ MIT © [Olakai](https://olakai.ai)
 
 **Need help?**
 
-- 📖 [Documentation](https://app.olakai.ai/docs/getting-started/getting-started)
+- 📖 [Documentation](https://app.olakai.ai/docs/olakai)
 - 📧 [Support Email](mailto:support@olakai.ai)
