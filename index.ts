@@ -32,5 +32,7 @@ export {
 
 export {
   OlakaiFunctionBlocked,
+  OlakaiFirewallBlocked,
+  OlakaiPersonaBlocked,
   OlakaiSDKError,
 } from "./src/exceptions";
