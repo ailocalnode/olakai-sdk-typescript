@@ -112,8 +112,10 @@ export type MonitoringAPIResponse = {
  */
 export type ControlAPIResponse = {
   allowed: boolean;
-  detectedSensitivity: string[];
-  isAllowedPersona: boolean;
+  details: {
+    detectedSensitivity: string[];
+    isAllowedPersona: boolean;
+  };
   message?: string;
 };
 

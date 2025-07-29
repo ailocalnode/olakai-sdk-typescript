@@ -55,8 +55,10 @@ async function shouldAllowCall<TArgs extends any[]>(
     olakaiLogger(`Control call failed, disallowing execution ${error}`, "error");
     return {
       allowed: false,
-      detectedSensitivity: [],
-      isAllowedPersona: false,
+      details: {
+        detectedSensitivity: [],
+        isAllowedPersona: false,
+      },
     }; 
   }
 }
@@ -219,9 +221,9 @@ export function monitor<TArgs extends any[], TResult>(
           priority: "high", // Errors always get high priority
         });
 
-        if (shouldAllow.detectedSensitivity.length > 0) {
-          throw new OlakaiFirewallBlocked(`Function execution blocked by Olakai's Control API: ${shouldAllow.detectedSensitivity.join(", ")} detected`);
-        } else if (!shouldAllow.isAllowedPersona) {
+        if (shouldAllow.details.detectedSensitivity.length > 0) {
+          throw new OlakaiFirewallBlocked(`Function execution blocked by Olakai's Control API: ${shouldAllow.details.detectedSensitivity.join(", ")} detected`);
+        } else if (!shouldAllow.details.isAllowedPersona) {
           throw new OlakaiPersonaBlocked("Function execution blocked by Olakai's Control API: Persona not allowed");
         } else {
           throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API");
