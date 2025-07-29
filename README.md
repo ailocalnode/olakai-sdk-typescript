@@ -293,6 +293,128 @@ const monitorCustom = olakaiMonitor(
 );
 ```
 
+## Error Handling When Execution is Blocked
+
+When OlakaiMonitor blocks execution of your function, it throws an `OlakaiFunctionBlocked` exception. This happens when the Olakai control system detects sensitive content, unauthorized access, or other policy violations.
+
+### Basic Error Handling
+
+```typescript
+import { olakaiMonitor, OlakaiFunctionBlocked } from "@olakai/sdk";
+
+const analyzeContent = olakaiMonitor(async (content: string) => {
+  // Your AI analysis logic here
+  return await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content }],
+  });
+});
+
+// Usage with error handling
+try {
+  const result = await analyzeContent("Analyze this sensitive data...");
+  console.log(result);
+} catch (error) {
+  if (error instanceof OlakaiFunctionBlocked) {
+    console.error("Request blocked by Olakai:", error.message);
+    // Handle blocked request gracefully
+    return { error: "Content analysis blocked for security reasons" };
+  }
+  // Handle other errors
+  throw error;
+}
+```
+
+### OlakaiFunctionBlocked Structure
+
+The `OlakaiFunctionBlocked` exception contains detailed information about why the function was blocked:
+
+```typescript
+class OlakaiFunctionBlocked extends Error {
+  details: {
+    detectedSensitivity: string[]; // Array of detected sensitive content types (PII, PHI, CODE, SECRET)
+    isAllowedPersona: boolean; // Whether the user is authorized (true or false based on the user persona)
+  };
+}
+```
+
+**Properties:**
+
+- `detectedSensitivity`: Array of strings identifying what sensitive content was detected (e.g., `["PII", "PHI", "CODE"]`)
+- `isAllowedPersona`: Boolean indicating if the user has permission to perform this action
+
+### Web Application Error Handling
+
+Here's how to handle blocked requests in Express.js routes:
+
+```typescript
+import { olakaiMonitor, OlakaiFunctionBlocked } from "@olakai/sdk";
+import express from "express";
+
+const app = express();
+
+// Monitored function for content analysis
+const analyzeTicket = olakaiMonitor(
+  async (ticketContent: string, userEmail: string) => {
+    const analysis = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "Analyze this support ticket" },
+        { role: "user", content: ticketContent },
+      ],
+    });
+    return analysis.choices[0].message.content;
+  },
+);
+
+// Express route with error handling
+app.post("/api/tickets/:id/analyze", async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id);
+    const ticket = await getTicket(ticketId);
+    const userEmail = req.user?.email || "anonymous@olakai.ai";
+
+    const analysis = await analyzeTicket(ticket.content, userEmail);
+
+    res.json({ analysis });
+  } catch (error) {
+    if (error instanceof OlakaiFunctionBlocked) {
+      let errorDescription = "";
+
+      // Check for specific blocking reasons
+      if (error?.details?.detectedSensitivity) {
+        errorDescription +=
+          "Detected sensitive content: " +
+          error.details.detectedSensitivity.join(", ");
+      }
+
+      if (error?.details?.isAllowedPersona === false) {
+        errorDescription += "You are not authorized to use this feature.";
+      }
+
+      return res.status(403).json({
+        error: "Request blocked by security policy",
+        details: errorDescription,
+        blocked: true,
+      });
+    }
+
+    // Handle other errors
+    res.status(500).json({
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+```
+
+### Error Handling Best Practices
+
+#### ✅ **Do This**
+
+- Always wrap monitored functions in try-catch blocks
+- Provide user-friendly error messages
+- Use specific error handling for different blocking reasons (Sensitive information, Unauthorized, etc)
+
 ---
 
 ## When You Need More Control
@@ -465,33 +587,6 @@ This will log detailed information about what the SDK is doing.
 
 ---
 
-## API Reference
-
-### Simple Functions
-
-| Function                             | Description               | Use Case               |
-| ------------------------------------ | ------------------------- | ---------------------- |
-| `olakaiMonitor(fn, options?)`        | Auto-capture with options | Most common use case   |
-| `olakaiAdvancedMonitor(fn, options)` | Advanced configuration    | For specific use-cases |
-
-### Helper Objects
-
-| Helper             | Description            | Example                 |
-| ------------------ | ---------------------- | ----------------------- |
-| `capture.all()`    | Capture input + output | Default behavior        |
-| `capture.input()`  | Capture only inputs    | Sensitive outputs       |
-| `capture.output()` | Capture only outputs   | Sensitive inputs        |
-| `capture.custom()` | Custom capture logic   | Complex data extraction |
-
-### Utilities
-
-- `getConfig()` - Get current SDK configuration
-- `getQueueSize()` - Check request queue size
-- `clearQueue()` - Clear pending requests
-- `flushQueue()` - Send all queued requests immediately
-
----
-
 ## Troubleshooting
 
 ### Common Issues
@@ -523,5 +618,5 @@ MIT © [Olakai](https://olakai.ai)
 
 **Need help?**
 
-- 📖 [Documentation](https://app.olakai.ai/docs/getting-started/getting-started)
+- 📖 [Documentation](https://app.olakai.ai/docs/olakai)
 - 📧 [Support Email](mailto:support@olakai.ai)
