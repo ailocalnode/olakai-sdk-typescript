@@ -60,7 +60,7 @@ export async function initClient(
   configBuilder.batchSize(options.batchSize || 10);
   configBuilder.batchTime(options.batchTime || 5000);
   configBuilder.retries(options.retries || 4);
-  configBuilder.timeout(options.timeout || 20000);
+  configBuilder.timeout(options.timeout || 30000);
   configBuilder.enableStorage(options.enableStorage || true);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
   configBuilder.maxStorageSize(options.maxStorageSize || 1000000);
@@ -89,6 +89,9 @@ export async function initClient(
   const storageType = isStorageEnabled(config) ? config.storageType : StorageType.DISABLED;
   initStorage(storageType, config.cacheDirectory);
 
+  if (config.storageType === StorageType.LOCAL_STORAGE) {
+    config.batchTime = 200;
+
   // Initialize queue manager with dependencies
   const queueDependencies: QueueDependencies = {
     config,
@@ -98,6 +101,7 @@ export async function initClient(
 
   const queueManager = await initQueueManager(queueDependencies);
   olakaiLogger(`Queue manager initialized successfully`, "info");
+  }
 }
 
 /**
