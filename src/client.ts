@@ -58,7 +58,7 @@ export async function initClient(
   configBuilder.controlEndpoint(`${domainUrl}/api/control/prompt`);
   configBuilder.enableBatching(options.enableBatching || true);
   configBuilder.batchSize(options.batchSize || 10);
-  configBuilder.batchTime(options.batchTime || 5000);
+  configBuilder.batchTime(options.batchTime || 300);
   configBuilder.retries(options.retries || 4);
   configBuilder.timeout(options.timeout || 30000);
   configBuilder.enableStorage(options.enableStorage || true);
@@ -89,9 +89,6 @@ export async function initClient(
   const storageType = isStorageEnabled(config) ? config.storageType : StorageType.DISABLED;
   initStorage(storageType, config.cacheDirectory);
 
-  if (config.storageType === StorageType.LOCAL_STORAGE) {
-    config.batchTime = 200;
-
   // Initialize queue manager with dependencies
   const queueDependencies: QueueDependencies = {
     config,
@@ -102,7 +99,6 @@ export async function initClient(
   const queueManager = await initQueueManager(queueDependencies);
   olakaiLogger(`Queue manager initialized successfully`, "info");
   }
-}
 
 /**
  * Get the current configuration
