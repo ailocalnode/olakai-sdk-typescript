@@ -213,6 +213,7 @@ export function monitor<TArgs extends any[], TResult>(
           subTask: options.subTask,
           blocked: true,
           tokens: 0,
+          sensitivity: shouldAllow.details.detectedSensitivity,
         }
 
         sendToAPI(payload, "monitoring", {
@@ -247,12 +248,12 @@ export function monitor<TArgs extends any[], TResult>(
       } catch (error) {
         olakaiLogger(`Original function failed: ${error}. \n Continuing execution...`, "error");
         // Handle error case monitoring
-        reportError(error, processedArgs, options, config);
+        reportError(error, processedArgs, options, config, shouldAllow.details.detectedSensitivity);
 
         throw error; // Re-throw the original error to be handled by the caller
       } 
         // Handle success case asynchronously
-      makeMonitoringCall(result, processedArgs, args, options, config, start);
+      makeMonitoringCall(result, processedArgs, args, options, shouldAllow.details.detectedSensitivity, config, start);
       return result; // We know result is defined if we get here (no function error)
     };
   };
@@ -272,6 +273,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   processedArgs: TArgs,
   args: TArgs,
   options: MonitorOptions<TArgs, TResult>,
+  detectedSensitivity: string[],
   config: SDKConfig,
   start: number,
 ) {
@@ -319,6 +321,7 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
     ...((options.subTask !== undefined && options.subTask !== "") ? { subTask: options.subTask } : {}),
     blocked: false,
+    sensitivity: detectedSensitivity,
     };
 
   olakaiLogger(`Successfully defined payload: ${JSON.stringify(payload)}`, "info");
@@ -352,7 +355,8 @@ async function reportError<TArgs extends any[], TResult>(
   functionError: any, 
   args: TArgs, 
   options: MonitorOptions<TArgs, TResult>, 
-  config: SDKConfig
+  config: SDKConfig,
+  detectedSensitivity: string[],
 ) {
   if (options.onMonitoredFunctionError ?? true) {
     try {
@@ -364,6 +368,7 @@ async function reportError<TArgs extends any[], TResult>(
     errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
     chatId: toApiString(chatId),
     email: toApiString(email),
+    sensitivity: detectedSensitivity,
   }
 
   await sendToAPI(payload, "monitoring", {
