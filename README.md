@@ -487,34 +487,6 @@ const loginUser = olakaiAdvancedMonitor(
 await loginUser("user@example.com", "session-123");
 ```
 
-### Execution Control
-
-Block function execution based on real-time API decisions:
-
-```typescript
-const controlledFunction = olakaiAdvancedMonitor(
-  async (action: string) => {
-    // This only runs if the control API allows it
-    return { success: true, action };
-  },
-  {
-    capture: ({ args, result }) => ({
-      input: { action: args[0] },
-      output: result,
-    }),
-    control: {
-      enabled: true,
-      captureInput: (args) => ({ action: args[0] }),
-      onBlocked: (args, response) => {
-        throw new Error(`Access denied: ${response.reason}`);
-      },
-    },
-  },
-);
-
-await controlledFunction("sensitive-operation");
-```
-
 ### Middleware System
 
 Add behavior to all monitored functions:

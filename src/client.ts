@@ -56,11 +56,11 @@ export async function initClient(
   configBuilder.apiKey(apiKey);
   configBuilder.monitorEndpoint(`${domainUrl}/api/monitoring/prompt`);
   configBuilder.controlEndpoint(`${domainUrl}/api/control/prompt`);
-  configBuilder.enableBatching(options.enableBatching || true);
+  configBuilder.enableBatching(options.enableBatching || false);
   configBuilder.batchSize(options.batchSize || 10);
-  configBuilder.batchTime(options.batchTime || 5000);
+  configBuilder.batchTime(options.batchTime || 300);
   configBuilder.retries(options.retries || 4);
-  configBuilder.timeout(options.timeout || 20000);
+  configBuilder.timeout(options.timeout || 30000);
   configBuilder.enableStorage(options.enableStorage || true);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
   configBuilder.maxStorageSize(options.maxStorageSize || 1000000);
@@ -98,7 +98,7 @@ export async function initClient(
 
   const queueManager = await initQueueManager(queueDependencies);
   olakaiLogger(`Queue manager initialized successfully`, "info");
-}
+  }
 
 /**
  * Get the current configuration
