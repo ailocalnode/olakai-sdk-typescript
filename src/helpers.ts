@@ -93,14 +93,7 @@ export const capture = {
  */
 export function olakaiMonitor<T extends (...args: any[]) => any>(
   fn: T,
-  options?: {
-    email?: string | ((args: Parameters<T>) => string),
-    chatId?: string | ((args: Parameters<T>) => string),
-    task?: string,
-    subTask?: string,
-    shouldScore?: boolean,
-    onMonitoredFunctionError?: boolean,
-  }
+  options?: { [K in keyof MonitorOptions<Parameters<T>, ReturnType<T>>]?: MonitorOptions<Parameters<T>, ReturnType<T>>[K] }
 ): T {
   const monitorOptions = {
     capture: ({ args, result }: { args: Parameters<T>; result: ReturnType<T> }) => ({
@@ -111,12 +104,4 @@ export function olakaiMonitor<T extends (...args: any[]) => any>(
   };
 
   return monitor(monitorOptions)(fn as any) as T;
-}
-
-
-export function olakaiAdvancedMonitor<T extends (...args: any[]) => any>(
-    fn: T,
-    options: MonitorOptions<Parameters<T>, ReturnType<T>>
-): T {
-    return monitor(options)(fn) as T;
 }
