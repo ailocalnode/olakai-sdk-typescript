@@ -95,7 +95,7 @@ export const captureHelpers = {
  * @param options - The eventual options for the monitored function
  * @returns The monitored function
  */
-export function olakaiMonitor<T extends (...args: any[]) => any>(
+export function olakaiSupervisor<T extends (...args: any[]) => any>(
   fn: T,
   options?: Partial<MonitorOptions<Parameters<T>, ReturnType<T>>>
 ): T extends (...args: any[]) => Promise<any> 
