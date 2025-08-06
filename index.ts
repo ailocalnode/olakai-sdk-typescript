@@ -7,8 +7,7 @@ export {
 // Export simplified helper functions
 export {
   olakaiMonitor,
-  olakaiAdvancedMonitor,
-  capture,
+  captureHelpers,
 } from "./src/helpers";
 export * from "./src/types";
 

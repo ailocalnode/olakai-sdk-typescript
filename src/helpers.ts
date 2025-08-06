@@ -8,7 +8,7 @@ import type { MonitorOptions } from "./types";
 /**
  * Capture helpers - common patterns for monitoring data
  */
-export const capture = {
+export const captureHelpers = {
   /**
    * Capture everything - both full input and output
    */
@@ -93,9 +93,12 @@ export const capture = {
  */
 export function olakaiMonitor<T extends (...args: any[]) => any>(
   fn: T,
-  options?: { [K in keyof MonitorOptions<Parameters<T>, ReturnType<T>>]?: MonitorOptions<Parameters<T>, ReturnType<T>>[K] }
-): T {
-  const monitorOptions = {
+  options?: Partial<MonitorOptions<Parameters<T>, ReturnType<T>>>
+): T extends (...args: any[]) => Promise<any> 
+  ? (...args: Parameters<T>) => Promise<ReturnType<T>>
+  : (...args: Parameters<T>) => Promise<ReturnType<T>> {
+  
+  const monitorOptions: MonitorOptions<Parameters<T>, ReturnType<T>> = {
     capture: ({ args, result }: { args: Parameters<T>; result: ReturnType<T> }) => ({
       input: args.length === 1 ? args[0] : args,
       output: result,
@@ -103,5 +106,5 @@ export function olakaiMonitor<T extends (...args: any[]) => any>(
     ...options,
   };
 
-  return monitor(monitorOptions)(fn as any) as T;
+  return monitor(monitorOptions)(fn) as any;
 }
