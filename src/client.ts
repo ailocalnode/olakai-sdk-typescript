@@ -10,7 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
-import { APIKeyMissingError, ConfigNotInitializedError, HTTPError, OlakaiFunctionBlocked, URLConfigurationError } from "./exceptions";
+import { APIKeyMissingError, ConfigNotInitializedError, HTTPError, OlakaiBlockedError, URLConfigurationError } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -43,6 +43,21 @@ function initOnlineDetection() {
  * @param apiKey - The API key
  * @param domainUrl - The domain URL
  * @param options - The extra options for the SDKConfig
+ * @default options - {
+ *  enableBatching: false,
+ *  batchSize: 10,
+ *  batchTime: 300,
+ *  retries: 4,
+ *  timeout: 30000,
+ *  enableStorage: true,
+ *  storageType: StorageType.AUTO,
+ *  debug: false,
+ *  verbose: false,
+ *  storageKey: "olakai-sdk-queue",
+ *  maxStorageSize: 1000000,
+ *  sanitizePatterns: [],
+ *  version: packageJson.version,
+ * }
  * @throws {URLConfigurationError} if the API URL is not set
  * @throws {APIKeyMissingError} if the API key is not set
  */
@@ -302,7 +317,7 @@ export async function sendToAPI(
       const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
       return response;
     } catch (error) {
-      if (error instanceof OlakaiFunctionBlocked) {
+      if (error instanceof OlakaiBlockedError) {
         throw error;
       }
       throw error;

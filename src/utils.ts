@@ -2,7 +2,10 @@ import type { SDKConfig} from "./types";
 import { StorageType } from "./types";
 import { getConfig } from "./client";
 
-// Common patterns for sanitizing sensitive data
+/**
+ * Default sanitize patterns for sanitizing sensitive data. 
+ * @returns An array of sanitize patterns
+ */
 export const DEFAULT_SANITIZE_PATTERNS = [
   /\b[\w.-]+@[\w.-]+\.\w+\b/g, // Email addresses
   /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // Credit card numbers

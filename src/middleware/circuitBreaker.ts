@@ -1,6 +1,17 @@
+import { CircuitBreakerOpenError } from "../exceptions";
 import { Middleware } from "./index";
 
-// Circuit breaker middleware
+/**
+ * Create a circuit breaker middleware
+ * This middleware implements a circuit breaker pattern to prevent a function from being called if it fails too many times.
+ * @param options - The options for the middleware
+ * @returns A middleware function
+ * @default options - {
+ *  failureThreshold: 5,     // Number of failures before the circuit breaker opens
+ *  resetTimeoutMs: 30000,   // Time in milliseconds before the circuit breaker closes
+ * }
+ * @throws {CircuitBreakerOpenError} if the circuit breaker is OPEN
+ */
 export function createCircuitBreakerMiddleware<
   TArgs extends any[],
   TResult,
@@ -24,7 +35,7 @@ export function createCircuitBreakerMiddleware<
           state = "HALF_OPEN";
           successCount = 0;
         } else {
-          throw new Error("Circuit breaker is OPEN");
+          throw new CircuitBreakerOpenError("Circuit breaker is OPEN");
         }
       }
 

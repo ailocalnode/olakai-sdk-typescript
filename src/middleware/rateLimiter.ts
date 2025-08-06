@@ -1,6 +1,17 @@
 import { Middleware } from "./index";
 
-// Rate limiting middleware
+/**
+ * Create a rate limiting middleware
+ * This middleware limits the number of calls to a function within a specified time window.
+ * @param options - The options for the middleware
+ * @returns A middleware function
+ * @default options - {
+ *  maxCalls: 100,                    // Maximum number of calls within the time window
+ *  windowMs: 60000,                  // Time window in milliseconds
+ *  keyGenerator: (args) => args[0],  // Function to generate a key for the rate limit
+ * }
+ * @throws {Error} if the rate limit is exceeded
+ */
 export function createRateLimitMiddleware<
   TArgs extends any[],
   TResult,

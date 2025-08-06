@@ -1,6 +1,13 @@
 import { Middleware } from "./index";
 
-// Caching middleware
+/**
+ * Create a caching middleware
+ * This middleware caches the results of a function call for a specified time period.
+ * It is useful for functions that are called frequently and return the same result for the same input.
+ * It is also useful for functions that are called with the same input but return different results.
+ * @param options - The options for the middleware
+ * @returns A middleware function
+ */
 export function createCachingMiddleware<TArgs extends any[], TResult>(options: {
     ttlMs?: number;
     keyGenerator: (args: TArgs) => string;

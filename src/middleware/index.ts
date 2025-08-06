@@ -9,6 +9,12 @@ export * from "./common";
 export * from "./transform";
 export * from "./custom";
 
+/**
+ * Middleware type
+ * @param TArgs - The type of the arguments of the function
+ * @param TResult - The type of the result of the function
+ * @returns A middleware type definition
+ */
 export type Middleware<TArgs extends any[], TResult> = {
     name: string;
     beforeCall?: (args: TArgs) => TArgs | Promise<TArgs>;
@@ -16,7 +22,14 @@ export type Middleware<TArgs extends any[], TResult> = {
     onError?: (error: any, args: TArgs) => void | Promise<void>;
   };
 
-
+/**
+ * Apply middleware to a function
+ * @param middlewares - The middleware to apply
+ * @param args - The arguments to pass to the function
+ * @param action - The action to perform
+ * @param result - The result of the function
+ * @param error - The error of the function
+ */
 export async function applyMiddleware<TArgs extends any[], TResult>(
     middlewares: Middleware<TArgs, TResult>[],
     args: TArgs,

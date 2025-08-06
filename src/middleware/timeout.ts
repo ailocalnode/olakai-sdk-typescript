@@ -1,6 +1,11 @@
 import { Middleware } from "./index";
 
-// Timeout middleware
+/**
+ * Create a timeout middleware
+ * This middleware sets a timeout for a function call.
+ * @param _timeoutMs - The timeout in milliseconds
+ * @returns A middleware function
+ */
 export function createTimeoutMiddleware<TArgs extends any[], TResult>(
     _timeoutMs: number,
   ): Middleware<TArgs, TResult> {
@@ -13,7 +18,14 @@ export function createTimeoutMiddleware<TArgs extends any[], TResult>(
     };
   }
   
-  // Validation middleware
+  /**
+   * Create a validation middleware
+   * This middleware validates the arguments and result of a function call.
+   * @param options - The options for the middleware
+   * @param options.validateArgs - The function to validate the arguments
+   * @param options.validateResult - The function to validate the result
+   * @returns A middleware function
+   */
   export function createValidationMiddleware<
     TArgs extends any[],
     TResult,
