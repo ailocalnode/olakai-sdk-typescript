@@ -10,7 +10,7 @@ import { initQueueManager, QueueDependencies, addToQueue } from "./queue";
 import packageJson from "../package.json";
 import { ConfigBuilder, olakaiLogger, sleep } from "./utils";
 import { StorageType, ErrorCode } from "./types";
-import { APIKeyMissingError, ConfigNotInitializedError, HTTPError, OlakaiFunctionBlocked, URLConfigurationError } from "./exceptions";
+import { APIKeyMissingError, ConfigNotInitializedError, HTTPError, OlakaiBlockedError, URLConfigurationError } from "./exceptions";
 
 let config: SDKConfig;
 
@@ -302,7 +302,7 @@ export async function sendToAPI(
       const response = await sendWithRetry(payload as ControlPayload, config.retries!, "control") as ControlAPIResponse;
       return response;
     } catch (error) {
-      if (error instanceof OlakaiFunctionBlocked) {
+      if (error instanceof OlakaiBlockedError) {
         throw error;
       }
       throw error;

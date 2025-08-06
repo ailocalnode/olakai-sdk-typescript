@@ -31,6 +31,6 @@ export {
 } from "./src/utils";
 
 export {
-  OlakaiFunctionBlocked,
+  OlakaiBlockedError as OlakaiFunctionBlocked,
   OlakaiSDKError,
 } from "./src/exceptions";

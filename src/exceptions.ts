@@ -15,7 +15,7 @@ export class OlakaiSDKError extends Error {
 /**
  * OlakaiFunctionBlocked is thrown when a function is blocked by Olakai's Control API.
  */
-export class OlakaiFunctionBlocked extends OlakaiSDKError {
+export class OlakaiBlockedError extends OlakaiSDKError {
   details: {
     detectedSensitivity: string[];
     isAllowedPersona: boolean;

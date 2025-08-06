@@ -2,7 +2,7 @@ import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
 import { olakaiLogger, toApiString } from "./utils";
-import { OlakaiFunctionBlocked } from "./exceptions";
+import { OlakaiBlockedError } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
 // Global middleware registry
@@ -140,7 +140,7 @@ function resolveIdentifiers<TArgs extends any[]>(
  * @param options - The options for the monitored function
  * @param fn - The function to monitor (sync or async)
  * @returns The monitored async function
- * @throws {OlakaiFunctionBlocked} if the function is blocked by Olakai's Control API
+ * @throws {OlakaiBlockedError} if the function is blocked by Olakai's Control API
  * @throws {Error} throw the original function's error if the function fails
  */
 
@@ -222,7 +222,7 @@ export function monitor<TArgs extends any[], TResult>(
           priority: "high", // Errors always get high priority
         });
 
-        throw new OlakaiFunctionBlocked("Function execution blocked by Olakai's Control API", shouldAllow.details);
+        throw new OlakaiBlockedError("Function execution blocked by Olakai's Control API", shouldAllow.details);
       }
 
       olakaiLogger("Applying beforeCall middleware...", "info");
