@@ -61,3 +61,12 @@ export class HTTPError extends OlakaiSDKError {
     super(message);
   }
 }
+
+/**
+ * CircuitBreakerOpenError is thrown when the circuit breaker is OPEN.
+ */
+export class CircuitBreakerOpenError extends OlakaiSDKError {
+  constructor(message: string) {
+    super(message);
+  }
+}

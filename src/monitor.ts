@@ -8,12 +8,20 @@ import { applyMiddleware } from "./middleware";
 // Global middleware registry
 const middlewares: Middleware<any, any>[] = [];
 
+/**
+ * Add a middleware to the global middleware registry
+ * @param middleware - The middleware to add. See exports from ./middleware/index.ts for available middlewares
+ */
 export function addMiddleware<TArgs extends any[], TResult>(
   middleware: Middleware<TArgs, TResult>,
 ) {
   middlewares.push(middleware);
 }
 
+/**
+ * Remove a middleware from the global middleware registry
+ * @param name - The name of the middleware to remove
+ */
 export function removeMiddleware(name: string) {
   const index = middlewares.findIndex((m) => m.name === name);
   if (index > -1) {
@@ -64,7 +72,7 @@ async function shouldAllowCall<TArgs extends any[]>(
 }
 
 /**
- * Sanitize data by replacing sensitive information with a placeholder
+ * Sanitize data by replacing sensitive information with a placeholder [REDACTED]
  * @param data - The data to sanitize
  * @param patterns - The patterns to replace
  * @returns The sanitized data

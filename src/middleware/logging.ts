@@ -1,6 +1,17 @@
 import { Middleware } from "./index";
 
-// Logging middleware
+/**
+ * Create a logging middleware
+ * This middleware logs the function call and the result.
+ * @param options - The options for the middleware
+ * @default options - {
+ *  level: "info",         // The level of the log (debug, info, warn, error)
+ *  includeArgs: false,    // Whether to include the arguments in the log
+ *  includeResult: false,  // Whether to include the result in the log
+ *  logger: console,       // The logger to use
+ * }
+ * @returns A middleware function
+ */
 export function createLoggingMiddleware<TArgs extends any[], TResult>(options: {
     level?: "debug" | "info" | "warn" | "error";
     includeArgs?: boolean;

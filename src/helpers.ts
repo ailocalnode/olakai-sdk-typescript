@@ -6,11 +6,12 @@ import { monitor } from "./monitor";
 import type { MonitorOptions } from "./types";
 
 /**
- * Capture helpers - common patterns for monitoring data
+ * Capture helpers - common patterns for capturing data to be monitored
  */
 export const captureHelpers = {
   /**
    * Capture everything - both full input and output
+   * Use this on the options parameter of the olakaiMonitor function
    */
   all: <TArgs extends any[], TResult>(options?: { 
     email?: string | ((args: TArgs) => string),
@@ -27,6 +28,7 @@ export const captureHelpers = {
 
   /**
    * Capture only the input/arguments
+   * Use this on the options parameter of the olakaiMonitor function
    */
   input: <TArgs extends any[], TResult>(options?: { 
     email?: string | ((args: TArgs) => string),
@@ -44,6 +46,7 @@ export const captureHelpers = {
 
   /**
    * Capture only the output/result
+   * Use this on the options parameter of the olakaiMonitor function
    */
   output: <TArgs extends any[], TResult>(options?: { 
     email?: string | ((args: TArgs) => string),
@@ -61,6 +64,7 @@ export const captureHelpers = {
 
   /**
    * Custom capture with simple input/output functions
+   * Use this on the options parameter of the olakaiMonitor function
    */
   custom: <TArgs extends any[], TResult>(config: {
     input: (args: TArgs) => any,
@@ -85,7 +89,7 @@ export const captureHelpers = {
 };
 
 /**
- * Simple monitor function that automatically captures everything and sends the data to the Olakai API
+ * Mnitor function that automatically captures everything by default and sends the data to the Olakai API
  * No type parameters needed - TypeScript will infer them
  * @param fn - The function to monitor
  * @param options - The eventual options for the monitored function

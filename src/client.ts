@@ -43,6 +43,21 @@ function initOnlineDetection() {
  * @param apiKey - The API key
  * @param domainUrl - The domain URL
  * @param options - The extra options for the SDKConfig
+ * @default options - {
+ *  enableBatching: false,
+ *  batchSize: 10,
+ *  batchTime: 300,
+ *  retries: 4,
+ *  timeout: 30000,
+ *  enableStorage: true,
+ *  storageType: StorageType.AUTO,
+ *  debug: false,
+ *  verbose: false,
+ *  storageKey: "olakai-sdk-queue",
+ *  maxStorageSize: 1000000,
+ *  sanitizePatterns: [],
+ *  version: packageJson.version,
+ * }
  * @throws {URLConfigurationError} if the API URL is not set
  * @throws {APIKeyMissingError} if the API key is not set
  */
