@@ -1,10 +1,56 @@
 # Olakai SDK
 
-A TypeScript SDK for monitoring function calls and controlling execution with real-time API decisions.
+A TypeScript SDK for **supervising and controlling function execution** with real-time policy enforcement, monitoring, and middleware support.
 
 [![npm version](https://badge.fury.io/js/@olakai%2Fsdk.svg)](https://badge.fury.io/js/@olakai%2Fsdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+
+## 🎯 **What Does This SDK Do?**
+
+**Olakai SDK supervises your function calls** by wrapping them with intelligent control and monitoring. Perfect for:
+
+- **🛡️ AI/LLM Applications**: Control and monitor AI model calls (OpenAI, Anthropic, etc.)
+- **🔒 Sensitive Data Processing**: Prevent unauthorized access to sensitive operations
+- **📊 Function Analytics**: Track performance, usage patterns, and errors
+- **🚪 Access Control**: Enforce user permissions and content policies
+- **⚡ Production Monitoring**: Real-time insights into function behavior
+
+## 🔄 **How It Works: 5-Step Supervision Process**
+
+When you wrap a function with `olakaiSupervisor`, every call goes through these steps:
+
+```
+1. 🛡️  Control Call (OlakaiAPI) → Check if function should be allowed to run. Failfast: if the the call isn't allowed, it will raise an exception (see below for details)
+2. ⚙️  Middleware beforeCall → Pre-processing, validation, transformations
+3. 🎯  Function Call → Your actual function executes
+4. ⚙️  Middleware afterCall → Post-processing, result transformations
+5. 📊  Monitoring (OlakaiAPI) → Log call data, performance metrics, and results
+```
+
+**Key Points:**
+
+- **FailFast Control Call** : if the Control Call fails or doesn't allowed the execution of the function, it will raise an Exception (see below for details).
+- **FailFast Function Call** : if the original function fails, it will raise the corresponding exception.
+- **FailSafe Operations** : if the Middleware or the Monitoring operation fails, it will log and continue the process.
+
+---
+
+## 🚀 **Key Benefits**
+
+### ✅ **Zero Configuration Monitoring**
+
+Just wrap your functions and start monitoring immediately
+
+### ✅ **Smart Type Inference**
+
+TypeScript automatically figures out your function types
+
+### ✅ **Production Ready**
+
+Built-in error handling, retries, and offline support (configurable)
+
+---
 
 ## Installation
 
@@ -137,28 +183,6 @@ async function generateResponse(prompt: string) {
 _This approach lets you monitor specific API calls while keeping your business logic separate._
 
 </details>
-
----
-
-## 🚀 **Why Use Olakai SDK?**
-
-### ✅ **Zero Configuration Monitoring**
-
-Just wrap your functions and start monitoring immediately
-
-### ✅ **Never Breaks Your Code**
-
-If monitoring fails, your functions still work perfectly
-
-### ✅ **Smart Type Inference**
-
-TypeScript automatically figures out your function types
-
-### ✅ **Production Ready**
-
-Built-in error handling, retries, and offline support
-
----
 
 ## Simple Examples
 
