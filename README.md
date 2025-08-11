@@ -1,10 +1,56 @@
 # Olakai SDK
 
-A TypeScript SDK for monitoring function calls and controlling execution with real-time API decisions.
+A TypeScript SDK for **supervising and controlling function execution** with real-time policy enforcement, monitoring, and middleware support.
 
 [![npm version](https://badge.fury.io/js/@olakai%2Fsdk.svg)](https://badge.fury.io/js/@olakai%2Fsdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+
+## 🎯 **What Does This SDK Do?**
+
+**Olakai SDK supervises your function calls** by wrapping them with intelligent control and monitoring. Perfect for:
+
+- **🛡️ AI/LLM Applications**: Control and monitor AI model calls (OpenAI, Anthropic, etc.)
+- **🔒 Sensitive Data Processing**: Prevent unauthorized access to sensitive operations
+- **📊 Function Analytics**: Track performance, usage patterns, and errors
+- **🚪 Access Control**: Enforce user permissions and content policies
+- **⚡ Production Monitoring**: Real-time insights into function behavior
+
+## 🔄 **How It Works: 5-Step Supervision Process**
+
+When you wrap a function with `olakaiSupervisor`, every call goes through these steps:
+
+```
+1. 🛡️  Control Call (OlakaiAPI) → Check if function should be allowed to run. Failfast: if the the call isn't allowed, it will raise an exception (see below for details)
+2. ⚙️  Middleware beforeCall → Pre-processing, validation, transformations
+3. 🎯  Function Call → Your actual function executes
+4. ⚙️  Middleware afterCall → Post-processing, result transformations
+5. 📊  Monitoring (OlakaiAPI) → Log call data, performance metrics, and results
+```
+
+**Key Points:**
+
+- **FailFast Control Call** : if the Control Call fails or doesn't allowed the execution of the function, it will raise an Exception (see below for details).
+- **FailFast Function Call** : if the original function fails, it will raise the corresponding exception.
+- **FailSafe Operations** : if the Middleware or the Monitoring operation fails, it will log and continue the process.
+
+---
+
+## 🚀 **Key Benefits**
+
+### ✅ **Zero Configuration Monitoring**
+
+Just wrap your functions and start monitoring immediately
+
+### ✅ **Smart Type Inference**
+
+TypeScript automatically figures out your function types
+
+### ✅ **Production Ready**
+
+Built-in error handling, retries, and offline support (configurable)
+
+---
 
 ## Installation
 
@@ -15,13 +61,13 @@ npm install @olakai/sdk
 ## Quick Start - The Easy & Fast Way
 
 ```typescript
-import { initClient, olakaiMonitor } from @olakai/sdk;
+import { initClient, olakaiSupervisor } from "@olakai/sdk";
 
 // 1. Initialize once
 initClient("your-olakai-api-key", "https://app.olakai.ai");
 
 // 2. Wrap any function - that's it!
-const completeMyPrompt = olakaiMonitor(async (prompt: string) => {
+const completeMyPrompt = olakaiSupervisor(async (prompt: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -72,7 +118,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, olakaiMonitor } from "@olakai/sdk";
+import { initClient, olakaiSupervisor } from "@olakai/sdk";
 
 // Initialize Olakai SDK
 initClient("your-olakai-api-key", "https://app.olakai.ai");
@@ -82,7 +128,7 @@ const openai = new OpenAI({
 });
 
 // Just wrap your function - that's the only change!
-const generateResponse = olakaiMonitor(async (prompt: string) => {
+const generateResponse = olakaiSupervisor(async (prompt: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -108,7 +154,7 @@ const response = await generateResponse("Explain quantum computing");
 
 ```typescript
 import OpenAI from "openai";
-import { initClient, olakaiMonitor } from "@olakai/sdk";
+import { initClient, olakaiSupervisor } from "@olakai/sdk";
 
 initClient("your-olakai-api-key", "https://your-olakai-domain.ai");
 
@@ -117,7 +163,7 @@ const openai = new OpenAI({
 });
 
 // Create a monitored version of the API call
-const monitoredCompletion = olakaiMonitor(async (messages: any[]) => {
+const monitoredCompletion = olakaiSupervisor(async (messages: any[]) => {
   return await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages,
@@ -138,34 +184,12 @@ _This approach lets you monitor specific API calls while keeping your business l
 
 </details>
 
----
-
-## 🚀 **Why Use Olakai SDK?**
-
-### ✅ **Zero Configuration Monitoring**
-
-Just wrap your functions and start monitoring immediately
-
-### ✅ **Never Breaks Your Code**
-
-If monitoring fails, your functions still work perfectly
-
-### ✅ **Smart Type Inference**
-
-TypeScript automatically figures out your function types
-
-### ✅ **Production Ready**
-
-Built-in error handling, retries, and offline support
-
----
-
 ## Simple Examples
 
 ### Monitor Any Function
 
 ```typescript
-import { olakaiMonitor } from "@olakai/sdk";
+import { olakaiSupervisor } from "@olakai/sdk";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -173,7 +197,7 @@ const openai = new OpenAI({
 });
 
 // Monitor customer support response generation
-const generateSupportResponse = olakaiMonitor(
+const generateSupportResponse = olakaiSupervisor(
   async (customerMessage: string, orderHistory: any[]) => {
     const systemPrompt = `You are a helpful customer support agent. 
     Respond professionally and empathetically to customer inquiries. 
@@ -217,7 +241,7 @@ console.log(response);
 ### Track Users (For Multi-User Apps)
 
 ```typescript
-import { olakaiMonitor } from "@olakai/sdk";
+import { olakaiSupervisor } from "@olakai/sdk";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -225,13 +249,13 @@ const openai = new OpenAI({
 });
 
 // Monitor customer support with user tracking
-const generatePersonalizedResponse = olakaiMonitor(
+const generatePersonalizedResponse = olakaiSupervisor(
   async (
     customerMessage: string,
     customerEmail: string,
     chatSessionId: string,
   ) => {
-    const systemPrompt = `You are a helpful customer support agent. 
+    const systemPrompt = `You are a helpful customer support agent.
     Respond professionally and empathetically to customer inquiries.
     Use the customer's email to provide personalized assistance.`;
 
@@ -253,8 +277,8 @@ const generatePersonalizedResponse = olakaiMonitor(
   {
     task: "Customer service", // Optional: give it a task
     subtask: "Generate Personalized Response", // Optional: give it a subtask
-    getUserId: (args) => args[1], // Get userId from customer email
-    getChatId: (args) => args[2], // Get chatId from session ID
+    email: string | (args) => args[1], // Get userId from customer email
+    chatId: string |(args) => args[2], // Get chatId from session ID
   },
 );
 
@@ -272,37 +296,49 @@ await generatePersonalizedResponse(
 ### Capture Only What You Need
 
 ```typescript
-import { olakaiMonitor, capture } from "@olakai/sdk";
+import { olakaiSupervisor, captureHelpers } from "@olakai/sdk";
 
 // Capture everything (default)
-const monitorAll = olakaiMonitor(myFunction, capture.all());
+const monitorAll = olakaiSupervisor(myFunction);
 
-// Capture only inputs
-const monitorInputs = olakaiMonitor(myFunction, capture.input());
+// Capture only inputs using helper
+const monitorInputs = olakaiSupervisor(myFunction, {
+  ...captureHelpers.input(),
+  email: "user@example.com", //Example of additional options
+  task: "processing",
+});
 
-// Capture only outputs
-const monitorOutputs = olakaiMonitor(myFunction, capture.output());
+// Capture only outputs using helper
+const monitorOutputs = olakaiSupervisor(myFunction, {
+  ...captureHelpers.output(),
+  email: "user@example.com",
+  task: "processing",
+});
 
-// Custom capture
-const monitorCustom = olakaiMonitor(
-  myFunction,
-  capture.custom({
+// Custom capture using helper
+const monitorCustom = olakaiSupervisor(myFunction, {
+  ...captureHelpers.custom({
     input: (args) => ({ email: args[0] }),
     output: (result) => ({ success: result.success }),
   }),
-);
+  email: "user@example.com",
+  task: "custom-processing",
+});
 ```
+
+The capture process transforms the function's arguments and return value into input/output data using the provided capture function,
+which extracts the relevant information to be sent to Olakai's monitoring API for analysis and tracking.
 
 ## Error Handling When Execution is Blocked
 
-When OlakaiMonitor blocks execution of your function, it throws an `OlakaiFunctionBlocked` exception. This happens when the Olakai control system detects sensitive content, unauthorized access, or other policy violations.
+When OlakaiMonitor blocks execution of your function, it throws an `OlakaiBlockedError` exception. This happens when the Olakai control system detects sensitive content, unauthorized access, or other policy violations.
 
 ### Basic Error Handling
 
 ```typescript
-import { olakaiMonitor, OlakaiFunctionBlocked } from "@olakai/sdk";
+import { olakaiSupervisor, OlakaiBlockedError } from "@olakai/sdk";
 
-const analyzeContent = olakaiMonitor(async (content: string) => {
+const analyzeContent = olakaiSupervisor(async (content: string) => {
   // Your AI analysis logic here
   return await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
@@ -315,7 +351,7 @@ try {
   const result = await analyzeContent("Analyze this sensitive data...");
   console.log(result);
 } catch (error) {
-  if (error instanceof OlakaiFunctionBlocked) {
+  if (error instanceof OlakaiBlockedError) {
     console.error("Request blocked by Olakai:", error.message);
     // Handle blocked request gracefully
     return { error: "Content analysis blocked for security reasons" };
@@ -325,12 +361,12 @@ try {
 }
 ```
 
-### OlakaiFunctionBlocked Structure
+### OlakaiBlockedError Structure
 
-The `OlakaiFunctionBlocked` exception contains detailed information about why the function was blocked:
+The `OlakaiBlockedError` exception contains detailed information about why the function was blocked:
 
 ```typescript
-class OlakaiFunctionBlocked extends Error {
+class OlakaiBlockedError extends Error {
   details: {
     detectedSensitivity: string[]; // Array of detected sensitive content types (PII, PHI, CODE, SECRET)
     isAllowedPersona: boolean; // Whether the user is authorized (true or false based on the user persona)
@@ -343,18 +379,19 @@ class OlakaiFunctionBlocked extends Error {
 - `detectedSensitivity`: Array of strings identifying what sensitive content was detected (e.g., `["PII", "PHI", "CODE"]`)
 - `isAllowedPersona`: Boolean indicating if the user has permission to perform this action
 
-### Web Application Error Handling
+<details>
+<summary><strong>### Web Application Error Handling</strong></summary>
 
 Here's how to handle blocked requests in Express.js routes:
 
 ```typescript
-import { olakaiMonitor, OlakaiFunctionBlocked } from "@olakai/sdk";
+import { olakaiSupervisor, OlakaiBlockedError } from "@olakai/sdk";
 import express from "express";
 
 const app = express();
 
 // Monitored function for content analysis
-const analyzeTicket = olakaiMonitor(
+const analyzeTicket = olakaiSupervisor(
   async (ticketContent: string, userEmail: string) => {
     const analysis = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -378,7 +415,7 @@ app.post("/api/tickets/:id/analyze", async (req, res) => {
 
     res.json({ analysis });
   } catch (error) {
-    if (error instanceof OlakaiFunctionBlocked) {
+    if (error instanceof OlakaiBlockedError) {
       let errorDescription = "";
 
       // Check for specific blocking reasons
@@ -407,6 +444,8 @@ app.post("/api/tickets/:id/analyze", async (req, res) => {
 });
 ```
 
+</details>
+
 ### Error Handling Best Practices
 
 #### ✅ **Do This**
@@ -421,12 +460,12 @@ app.post("/api/tickets/:id/analyze", async (req, res) => {
 
 ### Advanced Monitoring
 
-Sometimes you need fine-grained control. The `olakaiAdvancedMonitor` function gives you full access to all monitoring options:
+Sometimes you need fine-grained control. The `olakaiSupervisor` function gives you full access to all monitoring options:
 
 ```typescript
-import { olakaiAdvancedMonitor } from "@olakai/sdk";
+import { olakaiSupervisor } from "@olakai/sdk";
 
-const testFunction =  olakaiAdvancedMonitor(
+const testFunction =  olakaiSupervisor(
   async... ,
   options: MonitorOptions
 )
@@ -457,9 +496,9 @@ export type MonitorOptions<TArgs extends any[], TResult> = {
 </details>
 
 ```typescript
-import { olakaiAdvancedMonitor } from "@olakai/sdk";
+import { olakaiSupervisor } from "@olakai/sdk";
 
-const loginUser = olakaiAdvancedMonitor(
+const loginUser = olakaiSupervisor(
   async (email: string, sessionId: string) => {
     // Your login logic
     return { success: true, userId: "123" };
@@ -475,7 +514,7 @@ const loginUser = olakaiAdvancedMonitor(
         userId: result.userId,
       },
     }),
-    userId: (args) => args[0], // dynamic user ID
+    email: (args) => args[0], // dynamic user email
     chatId: (args) => args[1], // session tracking
     sanitize: true, // remove sensitive data
     priority: "high", // queue priority
@@ -540,7 +579,7 @@ This will log detailed information about what the SDK is doing.
 
 ### ✅ **Do This**
 
-- Start with `olakaiMonitor`
+- Start with `olakaiSupervisor`
 - Use descriptive task names
 - Monitor important business logic functions
 - Set up user tracking for multi-user apps

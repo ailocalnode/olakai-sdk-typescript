@@ -4,7 +4,18 @@ import { createRateLimitMiddleware } from "./rateLimiter";
 import { createValidationMiddleware } from "./timeout";
 import { createCircuitBreakerMiddleware } from "./circuitBreaker";
 
-// Export a function to create a common middleware stack
+/**
+ * Create a common middleware stack
+ * Stack details: 
+ * 1. Logging middleware
+ * 2. Rate limiting middleware
+ * 3. Validation middleware
+ * 4. Circuit breaker middleware
+ * See exports from ./middleware/index.ts for details on each middleware.
+ * @param functionName - The name of the function to monitor. This is just for logging purposes.
+ * @param options - The options for the middleware
+ * @returns An array of middleware functions
+ */
 export function createCommonMiddleware<TArgs extends any[], TResult>(
     functionName: string,
     options: {

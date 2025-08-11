@@ -1,14 +1,10 @@
-export {monitor, addMiddleware, removeMiddleware } from "./src/monitor";
-export {
-  initClient,
-  getConfig,
-} from "./src/client";
+export {addMiddleware, removeMiddleware } from "./src/monitor";
+export {initClient} from "./src/client";
 
 // Export simplified helper functions
 export {
-  olakaiMonitor,
-  olakaiAdvancedMonitor,
-  capture,
+  olakaiSupervisor as olakaiMonitor,
+  captureHelpers,
 } from "./src/helpers";
 export * from "./src/types";
 
@@ -31,6 +27,6 @@ export {
 } from "./src/utils";
 
 export {
-  OlakaiFunctionBlocked,
+  OlakaiBlockedError,
   OlakaiSDKError,
 } from "./src/exceptions";

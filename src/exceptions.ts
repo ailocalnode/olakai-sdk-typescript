@@ -15,7 +15,7 @@ export class OlakaiSDKError extends Error {
 /**
  * OlakaiFunctionBlocked is thrown when a function is blocked by Olakai's Control API.
  */
-export class OlakaiFunctionBlocked extends OlakaiSDKError {
+export class OlakaiBlockedError extends OlakaiSDKError {
   details: {
     detectedSensitivity: string[];
     isAllowedPersona: boolean;
@@ -57,6 +57,15 @@ export class ConfigNotInitializedError extends OlakaiSDKError {
  * HTTPError is thrown when an HTTP error occurs.
  */
 export class HTTPError extends OlakaiSDKError {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/**
+ * CircuitBreakerOpenError is thrown when the circuit breaker is OPEN.
+ */
+export class CircuitBreakerOpenError extends OlakaiSDKError {
   constructor(message: string) {
     super(message);
   }
