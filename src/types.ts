@@ -74,7 +74,7 @@ export type SDKConfig = {
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  
-  sanitizePatterns: RegExp[];
+  sanitizePatterns: SanitizePattern[];
   debug: boolean;
   verbose: boolean;
 };
@@ -120,6 +120,12 @@ export type ControlAPIResponse = {
   };
   message?: string;
 };
+
+export type SanitizePattern = {
+  pattern?: RegExp;
+  key?: string;
+  replacement?: string;
+}
 
 export enum ErrorCode {
   SUCCESS = 201,

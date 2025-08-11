@@ -1,7 +1,7 @@
 import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
-import { olakaiLogger, toJsonValue } from "./utils";
+import { olakaiLogger, toJsonValue, createErrorInfo } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
@@ -71,39 +71,6 @@ async function shouldAllowCall<TArgs extends any[]>(
   }
 }
 
-/**
- * Sanitize data by replacing sensitive information with a placeholder [REDACTED]
- * @param data - The data to sanitize
- * @param patterns - The patterns to replace
- * @returns The sanitized data
- */
-function sanitizeData(data: any, patterns?: RegExp[]): any {
-  if (!patterns?.length) return data;
-
-  let serialized = JSON.stringify(data);
-  patterns.forEach((pattern) => {
-    serialized = serialized.replace(pattern, "[REDACTED]");
-  });
-
-  try {
-    const parsed = JSON.parse(serialized);
-    olakaiLogger(`Data successfully sanitized`, "info");
-    return parsed;
-  } catch {
-    olakaiLogger(`Data failed to sanitize`, "warn");
-    return "[SANITIZED]";
-  }
-}
-
-function createErrorInfo(error: any): {
-  errorMessage: string;
-  stackTrace?: string;
-} {
-  return {
-    errorMessage: error instanceof Error ? error.message : String(error),
-    stackTrace: error instanceof Error ? error.stack : undefined,
-  };
-}
 
 /**
  * Resolve dynamic chatId and userId from options
@@ -213,7 +180,7 @@ export function monitor<TArgs extends any[], TResult>(
         const { chatId, email } = resolveIdentifiers(options, args)
 
         const payload: MonitorPayload = {
-          prompt: toJsonValue(args.length === 1 ? args[0] : args),
+          prompt: toJsonValue(args.length === 1 ? args[0] : args, false),
           response: "",
           chatId: chatId,
           email: email,
@@ -306,13 +273,6 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLogger("Success data captured...", "info");
 
-  const prompt = options.sanitize
-    ? sanitizeData(captureResult.input, config.sanitizePatterns)
-    : captureResult.input;
-  const response = options.sanitize
-    ? sanitizeData(captureResult.output, config.sanitizePatterns)
-    : captureResult.output;
-
   olakaiLogger("Resolving identifiers...", "info");
 
   const { chatId, email } = resolveIdentifiers(options, args);
@@ -320,8 +280,8 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   olakaiLogger("Creating payload...", "info");
 
   const payload: MonitorPayload = {
-    prompt: toJsonValue(prompt),
-    response: toJsonValue(response),
+    prompt: toJsonValue(captureResult.input, options.sanitize),
+    response: toJsonValue(captureResult.output, options.sanitize),
     chatId: chatId,
     email: email,
     tokens: 0,
