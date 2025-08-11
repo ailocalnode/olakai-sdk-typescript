@@ -1,7 +1,7 @@
 import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
-import { olakaiLogger, toApiString } from "./utils";
+import { olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
@@ -39,7 +39,7 @@ async function shouldAllowCall<TArgs extends any[]>(
     
     // Create control payload
     const payload: ControlPayload = {
-      prompt: toApiString(args.length === 1 ? args[0] : args),
+      prompt: toJsonValue(args.length === 1 ? args[0] : args),
       chatId: chatId,
       task: options.task,
       subTask: options.subTask,
@@ -213,10 +213,10 @@ export function monitor<TArgs extends any[], TResult>(
         const { chatId, email } = resolveIdentifiers(options, args)
 
         const payload: MonitorPayload = {
-          prompt: toApiString(args.length === 1 ? args[0] : args),
+          prompt: toJsonValue(args.length === 1 ? args[0] : args),
           response: "",
-          chatId: toApiString(chatId),
-          email: toApiString(email),
+          chatId: chatId,
+          email: email,
           task: options.task,
           subTask: options.subTask,
           blocked: true,
@@ -320,10 +320,10 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   olakaiLogger("Creating payload...", "info");
 
   const payload: MonitorPayload = {
-    prompt: toApiString(prompt),
-    response: toApiString(response),
-    chatId: toApiString(chatId),
-    email: toApiString(email),
+    prompt: toJsonValue(prompt),
+    response: toJsonValue(response),
+    chatId: chatId,
+    email: email,
     tokens: 0,
     requestTime: Number(Date.now() - start),
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
@@ -373,9 +373,9 @@ async function reportError<TArgs extends any[], TResult>(
   const payload: MonitorPayload = {
     prompt: "",
     response: "",
-    errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
-    chatId: toApiString(chatId),
-    email: toApiString(email),
+    errorMessage: errorInfo.errorMessage + (errorInfo.stackTrace ? `\n${errorInfo.stackTrace}` : ""),
+    chatId: chatId,
+    email: email,
     sensitivity: detectedSensitivity,
   }
 

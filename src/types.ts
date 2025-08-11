@@ -1,3 +1,4 @@
+
 /**
  * Payload for monitoring API
  */
@@ -6,8 +7,8 @@ export type MonitorPayload = {
   chatId?: string;
   task?: string;
   subTask?: string;
-  prompt: string;
-  response: string;
+  prompt: JsonValue;
+  response: JsonValue;
   tokens?: number;
   requestTime?: number;
   errorMessage?: string;
@@ -19,7 +20,7 @@ export type MonitorPayload = {
  * Payload for control API
  */
 export type ControlPayload = {
-  prompt: string;
+  prompt: JsonValue;
   email?: string;
   chatId?: string;
   task?: string;
@@ -127,3 +128,25 @@ export enum ErrorCode {
   BAD_REQUEST = 400,
   UNREACHABLE = 404,
 }
+
+/**
+ * Represents any valid JSON value.
+ */
+export type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonArray
+  | JsonObject;
+
+/**
+ * Represents an array of JSON values.
+ */
+export type JsonArray = JsonValue[];
+
+/**
+ * Represents a JSON object, which is a key-value map where keys are strings and
+ * values are any valid JSON value.
+ */
+export type JsonObject = { [key: string]: undefined | JsonValue };

@@ -1,4 +1,4 @@
-import type { SDKConfig} from "./types";
+import type { SDKConfig, JsonValue, JsonArray, JsonObject } from "./types";
 import { StorageType } from "./types";
 import { getConfig } from "./client";
 
@@ -198,26 +198,35 @@ export function createConfig(): ConfigBuilder {
   return new ConfigBuilder();
 }
 
-export function toApiString(val: any): string {
+export function toJsonValue(val: any): JsonValue {
   try {
-  if (typeof val === "string") return val;
-  if (val && typeof val === "object") {
-    // Option 1: key-value pairs
-    return Object.entries(val)
-      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
-      .join("; ");
-    // Option 2: JSON
-    // return JSON.stringify(val);
-  }
+    // Handle null and undefined
+    if (val === null || val === undefined) return null;
+    
+    // Handle primitives that are already JsonValue
+    if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+      return val;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(val)) {
+      return val.map(item => toJsonValue(item)) as JsonArray;
+    }
+    
+    // Handle objects
+    if (val && typeof val === "object") {
+      const result: JsonObject = {};
+      for (const [key, value] of Object.entries(val)) {
+        result[key] = toJsonValue(value);
+      }
+      return result;
+    }
+    
+    // Fallback for other types - convert to string
     return String(val);
   } catch (error) {
-    olakaiLogger(`Error converting value to string: ${error}`, "error");
-    try {
-      return JSON.stringify(val);
-    } catch (error) {
-      olakaiLogger(`Error converting value to string: ${error}`, "error");
-      return String(val);
-    }
+    olakaiLogger(`Error converting value to JsonValue: ${error}`, "error");
+    return String(val);
   }
 }
 
