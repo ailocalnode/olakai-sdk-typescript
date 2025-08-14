@@ -108,7 +108,7 @@ function resolveIdentifiers<TArgs extends any[]>(
   return { chatId, email };
 }
 
-//TODO : Add a way to pass in a custom tasks/subtasks in the payload
+
 /**
  * Monitor a function and send the data to the Olakai API
  * Always returns an async function, but can monitor both sync and async functions
@@ -264,15 +264,6 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLogger("AfterCall middleware completed...", "info");
 
-  olakaiLogger("Capturing success data...", "info");
-        // Capture success data
-  const captureResult = options.capture({
-    args: processedArgs,
-    result: processedResult,
-  });
-
-  olakaiLogger("Success data captured...", "info");
-
   olakaiLogger("Resolving identifiers...", "info");
 
   const { chatId, email } = resolveIdentifiers(options, args);
@@ -280,8 +271,8 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   olakaiLogger("Creating payload...", "info");
 
   const payload: MonitorPayload = {
-    prompt: toJsonValue(captureResult.input, options.sanitize),
-    response: toJsonValue(captureResult.output, options.sanitize),
+    prompt: toJsonValue(processedArgs, options.sanitize),
+    response: toJsonValue(processedResult, options.sanitize),
     chatId: chatId,
     email: email,
     tokens: 0,

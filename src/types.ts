@@ -33,10 +33,6 @@ export type ControlPayload = {
  * Configuration for each monitored function
  */
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  capture: (ctx: { args: TArgs; result: TResult }) => {
-    input: any;
-    output: any;
-  };
   onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);

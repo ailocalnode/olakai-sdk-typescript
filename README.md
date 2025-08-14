@@ -1,6 +1,6 @@
 # Olakai SDK
 
-A TypeScript SDK for **supervising and controlling function execution** with real-time policy enforcement, monitoring, and middleware support.
+A TypeScript SDK for **supervising function execution** with real-time policy enforcement, monitoring, and middleware support.
 
 [![npm version](https://badge.fury.io/js/@olakai%2Fsdk.svg)](https://badge.fury.io/js/@olakai%2Fsdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -291,44 +291,6 @@ await generatePersonalizedResponse(
 
 **What it does?** This feature lets you specify a userId, so our API can associate each call with a specific user. Instead of seeing "Anonymous user" in the UNO product's prompts panel, you'll see the actual user linked to each call. For now the matching is baed on users' email.
 
-## Common Patterns
-
-### Capture Only What You Need
-
-```typescript
-import { olakaiSupervisor, captureHelpers } from "@olakai/sdk";
-
-// Capture everything (default)
-const monitorAll = olakaiSupervisor(myFunction);
-
-// Capture only inputs using helper
-const monitorInputs = olakaiSupervisor(myFunction, {
-  ...captureHelpers.input(),
-  email: "user@example.com", //Example of additional options
-  task: "processing",
-});
-
-// Capture only outputs using helper
-const monitorOutputs = olakaiSupervisor(myFunction, {
-  ...captureHelpers.output(),
-  email: "user@example.com",
-  task: "processing",
-});
-
-// Custom capture using helper
-const monitorCustom = olakaiSupervisor(myFunction, {
-  ...captureHelpers.custom({
-    input: (args) => ({ email: args[0] }),
-    output: (result) => ({ success: result.success }),
-  }),
-  email: "user@example.com",
-  task: "custom-processing",
-});
-```
-
-The capture process transforms the function's arguments and return value into input/output data using the provided capture function,
-which extracts the relevant information to be sent to Olakai's monitoring API for analysis and tracking.
-
 ## Error Handling When Execution is Blocked
 
 When OlakaiMonitor blocks execution of your function, it throws an `OlakaiBlockedError` exception. This happens when the Olakai control system detects sensitive content, unauthorized access, or other policy violations.
@@ -477,10 +439,6 @@ const testFunction =  olakaiSupervisor(
 
 ```typescript
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  capture: (ctx: { args: TArgs; result: TResult }) => {
-    input: any;
-    output: any;
-  };
   onMonitoredFunctionError?: boolean; //// Whether to send the function's error to Olakai if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
@@ -504,16 +462,6 @@ const loginUser = olakaiSupervisor(
     return { success: true, userId: "123" };
   },
   {
-    capture: ({ args, result }) => ({
-      input: {
-        email: args[0],
-        requestTime: Date.now(),
-      },
-      output: {
-        success: result.success,
-        userId: result.userId,
-      },
-    }),
     email: (args) => args[0], // dynamic user email
     chatId: (args) => args[1], // session tracking
     sanitize: true, // remove sensitive data
