@@ -1,4 +1,4 @@
-import type { SDKConfig} from "./types";
+import type { SDKConfig, JsonValue, JsonArray, JsonObject, SanitizePattern } from "./types";
 import { StorageType } from "./types";
 import { getConfig } from "./client";
 
@@ -6,16 +6,15 @@ import { getConfig } from "./client";
  * Default sanitize patterns for sanitizing sensitive data. 
  * @returns An array of sanitize patterns
  */
-export const DEFAULT_SANITIZE_PATTERNS = [
-  /\b[\w.-]+@[\w.-]+\.\w+\b/g, // Email addresses
-  /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // Credit card numbers
-  /\b\d{3}-\d{2}-\d{4}\b/g, // SSN
-  /"password"\s*:\s*"[^"]*"/g, // Password fields in JSON
-  /"token"\s*:\s*"[^"]*"/g, // Token fields in JSON
-  /"apiKey"\s*:\s*"[^"]*"/g, // API key fields in JSON
-  /"secret"\s*:\s*"[^"]*"/g, // Secret fields in JSON
-  /Authorization:\s*Bearer\s+[\w.-]+/g, // Bearer tokens
-  /api[_-]?key\s*[:=]\s*[\w-]+/gi, // API keys
+export const DEFAULT_SANITIZE_PATTERNS: SanitizePattern[] = [
+  { pattern: /\b[\w.-]+@[\w.-]+\.\w+\b/g, replacement: "[REDACTED]" }, // Email addresses
+  { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[REDACTED]" }, // Credit card numbers
+  { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[REDACTED]" }, // SSN
+  { pattern: /\s*:\s*"[^"]*"/g, key: "password", replacement: "[REDACTED]" }, // Password fields in JSON
+  { pattern: /\s*:\s*"[^"]*"/g, key: "token", replacement: "[REDACTED]" }, // Token fields in JSON
+  { pattern: /\s*:\s*"[^"]*"/g, key: "apiKey", replacement: "[REDACTED]" }, // API key fields in JSON
+  { pattern: /\s*:\s*"[^"]*"/g, key: "secret", replacement: "[REDACTED]" }, // Secret fields in JSON
+  { pattern: /\s*:\s*"[^"]*"/g, key: "bearerToken", replacement: "[REDACTED]" }, // Bearer tokens
 ];
 
 // Validate SDK configuration
@@ -157,7 +156,7 @@ export class ConfigBuilder {
     return this;
   }
 
-  sanitizePatterns(patterns: RegExp[]): ConfigBuilder {
+  sanitizePatterns(patterns: SanitizePattern[]): ConfigBuilder {
     this.config.sanitizePatterns = patterns;
     return this;
   }
@@ -198,26 +197,84 @@ export function createConfig(): ConfigBuilder {
   return new ConfigBuilder();
 }
 
-export function toApiString(val: any): string {
+/**
+ * Sanitize data by replacing sensitive information with a custom placeholder
+ * @param data - The data to sanitize
+ * @param patterns - The patterns to replace
+ * @returns The sanitized data
+ */
+export function sanitizeData(data: string, dataKey?: string, patterns?: SanitizePattern[]): string {
+  if (!patterns?.length) return data;
+
+  let serialized = data;
+  patterns.forEach((pattern) => {
+    if (pattern.pattern) {
+      return serialized.replace(pattern.pattern, pattern.replacement || "[REDACTED]");
+    } else if (pattern.key) {
+      if (dataKey && dataKey.includes(pattern.key)) {
+        return pattern.replacement || "[REDACTED]";
+      } else {
+        return data;
+      }
+    }
+  });
+
   try {
-  if (typeof val === "string") return val;
-  if (val && typeof val === "object") {
-    // Option 1: key-value pairs
-    return Object.entries(val)
-      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
-      .join("; ");
-    // Option 2: JSON
-    // return JSON.stringify(val);
+    olakaiLogger(`Data successfully sanitized`, "info");
+    return serialized;
+  } catch {
+    olakaiLogger(`Data failed to sanitize`, "warn");
+    return "[SANITIZED]";
   }
+}
+
+export function createErrorInfo(error: any): {
+  errorMessage: string;
+  stackTrace?: string;
+} {
+  return {
+    errorMessage: error instanceof Error ? error.message : String(error),
+    stackTrace: error instanceof Error ? error.stack : undefined,
+  };
+}
+
+export function toJsonValue(val: any, sanitize: boolean = false): JsonValue {
+  try {
+    // Handle null and undefined
+    if (val === null || val === undefined) return null;
+    
+    // Handle primitives that are already JsonValue
+    
+    if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+      if (sanitize) {
+        return sanitizeData(String(val), undefined, getConfig().sanitizePatterns);
+      }
+      return val;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(val)) {
+      return val.map(item => toJsonValue(item, sanitize)) as JsonArray;
+    }
+    
+    // Handle objects
+    if (val && typeof val === "object") {
+      const result: JsonObject = {};
+      for (const [key, value] of Object.entries(val)) {
+        if (sanitize) {
+          result[key] = sanitizeData(String(value), key, getConfig().sanitizePatterns);
+        } else {
+          result[key] = toJsonValue(value, sanitize);
+        }
+      }
+      return result;
+    }
+    
+    // Fallback for other types - convert to string
     return String(val);
   } catch (error) {
-    olakaiLogger(`Error converting value to string: ${error}`, "error");
-    try {
-      return JSON.stringify(val);
-    } catch (error) {
-      olakaiLogger(`Error converting value to string: ${error}`, "error");
-      return String(val);
-    }
+    olakaiLogger(`Error converting value to JsonValue: ${error}`, "error");
+    return String(val);
   }
 }
 

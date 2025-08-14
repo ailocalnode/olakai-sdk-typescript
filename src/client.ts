@@ -49,7 +49,7 @@ function initOnlineDetection() {
  *  batchTime: 300,
  *  retries: 4,
  *  timeout: 30000,
- *  enableStorage: true,
+ *  enableStorage: false,
  *  storageType: StorageType.AUTO,
  *  debug: false,
  *  verbose: false,
@@ -76,7 +76,7 @@ export async function initClient(
   configBuilder.batchTime(options.batchTime || 300);
   configBuilder.retries(options.retries || 4);
   configBuilder.timeout(options.timeout || 30000);
-  configBuilder.enableStorage(options.enableStorage || true);
+  configBuilder.enableStorage(options.enableStorage || false);
   configBuilder.storageKey(options.storageKey || "olakai-sdk-queue");
   configBuilder.maxStorageSize(options.maxStorageSize || 1000000);
   configBuilder.sanitizePatterns(options.sanitizePatterns || []);

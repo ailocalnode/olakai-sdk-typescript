@@ -4,7 +4,6 @@ export {initClient} from "./src/client";
 // Export simplified helper functions
 export {
   olakaiSupervisor as olakaiMonitor,
-  captureHelpers,
 } from "./src/helpers";
 export * from "./src/types";
 

@@ -1,7 +1,7 @@
 import { sendToAPI, getConfig } from "./client";
 import type { MonitorOptions, ControlPayload, SDKConfig, ControlAPIResponse, MonitorPayload } from "./types";
 import type { Middleware } from "./middleware";
-import { olakaiLogger, toApiString } from "./utils";
+import { olakaiLogger, toJsonValue, createErrorInfo } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import { applyMiddleware } from "./middleware";
 
@@ -39,7 +39,7 @@ async function shouldAllowCall<TArgs extends any[]>(
     
     // Create control payload
     const payload: ControlPayload = {
-      prompt: toApiString(args.length === 1 ? args[0] : args),
+      prompt: toJsonValue(args.length === 1 ? args[0] : args),
       chatId: chatId,
       task: options.task,
       subTask: options.subTask,
@@ -71,39 +71,6 @@ async function shouldAllowCall<TArgs extends any[]>(
   }
 }
 
-/**
- * Sanitize data by replacing sensitive information with a placeholder [REDACTED]
- * @param data - The data to sanitize
- * @param patterns - The patterns to replace
- * @returns The sanitized data
- */
-function sanitizeData(data: any, patterns?: RegExp[]): any {
-  if (!patterns?.length) return data;
-
-  let serialized = JSON.stringify(data);
-  patterns.forEach((pattern) => {
-    serialized = serialized.replace(pattern, "[REDACTED]");
-  });
-
-  try {
-    const parsed = JSON.parse(serialized);
-    olakaiLogger(`Data successfully sanitized`, "info");
-    return parsed;
-  } catch {
-    olakaiLogger(`Data failed to sanitize`, "warn");
-    return "[SANITIZED]";
-  }
-}
-
-function createErrorInfo(error: any): {
-  errorMessage: string;
-  stackTrace?: string;
-} {
-  return {
-    errorMessage: error instanceof Error ? error.message : String(error),
-    stackTrace: error instanceof Error ? error.stack : undefined,
-  };
-}
 
 /**
  * Resolve dynamic chatId and userId from options
@@ -141,7 +108,7 @@ function resolveIdentifiers<TArgs extends any[]>(
   return { chatId, email };
 }
 
-//TODO : Add a way to pass in a custom tasks/subtasks in the payload
+
 /**
  * Monitor a function and send the data to the Olakai API
  * Always returns an async function, but can monitor both sync and async functions
@@ -213,10 +180,10 @@ export function monitor<TArgs extends any[], TResult>(
         const { chatId, email } = resolveIdentifiers(options, args)
 
         const payload: MonitorPayload = {
-          prompt: toApiString(args.length === 1 ? args[0] : args),
+          prompt: toJsonValue(args.length === 1 ? args[0] : args, false),
           response: "",
-          chatId: toApiString(chatId),
-          email: toApiString(email),
+          chatId: chatId,
+          email: email,
           task: options.task,
           subTask: options.subTask,
           blocked: true,
@@ -297,22 +264,6 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
 
   olakaiLogger("AfterCall middleware completed...", "info");
 
-  olakaiLogger("Capturing success data...", "info");
-        // Capture success data
-  const captureResult = options.capture({
-    args: processedArgs,
-    result: processedResult,
-  });
-
-  olakaiLogger("Success data captured...", "info");
-
-  const prompt = options.sanitize
-    ? sanitizeData(captureResult.input, config.sanitizePatterns)
-    : captureResult.input;
-  const response = options.sanitize
-    ? sanitizeData(captureResult.output, config.sanitizePatterns)
-    : captureResult.output;
-
   olakaiLogger("Resolving identifiers...", "info");
 
   const { chatId, email } = resolveIdentifiers(options, args);
@@ -320,10 +271,10 @@ async function makeMonitoringCall<TArgs extends any[], TResult>(
   olakaiLogger("Creating payload...", "info");
 
   const payload: MonitorPayload = {
-    prompt: toApiString(prompt),
-    response: toApiString(response),
-    chatId: toApiString(chatId),
-    email: toApiString(email),
+    prompt: toJsonValue(processedArgs, options.sanitize),
+    response: toJsonValue(processedResult, options.sanitize),
+    chatId: chatId,
+    email: email,
     tokens: 0,
     requestTime: Number(Date.now() - start),
     ...((options.task !== undefined && options.task !== "") ? { task: options.task } : {}),
@@ -373,9 +324,9 @@ async function reportError<TArgs extends any[], TResult>(
   const payload: MonitorPayload = {
     prompt: "",
     response: "",
-    errorMessage: toApiString(errorInfo.errorMessage) + toApiString(errorInfo.stackTrace),
-    chatId: toApiString(chatId),
-    email: toApiString(email),
+    errorMessage: errorInfo.errorMessage + (errorInfo.stackTrace ? `\n${errorInfo.stackTrace}` : ""),
+    chatId: chatId,
+    email: email,
     sensitivity: detectedSensitivity,
   }
 

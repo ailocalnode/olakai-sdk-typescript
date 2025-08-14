@@ -1,3 +1,4 @@
+
 /**
  * Payload for monitoring API
  */
@@ -6,8 +7,8 @@ export type MonitorPayload = {
   chatId?: string;
   task?: string;
   subTask?: string;
-  prompt: string;
-  response: string;
+  prompt: JsonValue;
+  response: JsonValue;
   tokens?: number;
   requestTime?: number;
   errorMessage?: string;
@@ -19,7 +20,7 @@ export type MonitorPayload = {
  * Payload for control API
  */
 export type ControlPayload = {
-  prompt: string;
+  prompt: JsonValue;
   email?: string;
   chatId?: string;
   task?: string;
@@ -32,10 +33,6 @@ export type ControlPayload = {
  * Configuration for each monitored function
  */
 export type MonitorOptions<TArgs extends any[], TResult> = {
-  capture: (ctx: { args: TArgs; result: TResult }) => {
-    input: any;
-    output: any;
-  };
   onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
   // Dynamic chat and user identification
   chatId?: string | ((args: TArgs) => string);
@@ -73,7 +70,7 @@ export type SDKConfig = {
   storageKey: string; // Storage key/identifier
   maxStorageSize: number; // Maximum storage size in bytes
   cacheDirectory?: string; // Custom cache directory for file storage (optional)  
-  sanitizePatterns: RegExp[];
+  sanitizePatterns: SanitizePattern[];
   debug: boolean;
   verbose: boolean;
 };
@@ -120,6 +117,12 @@ export type ControlAPIResponse = {
   message?: string;
 };
 
+export type SanitizePattern = {
+  pattern?: RegExp;
+  key?: string;
+  replacement?: string;
+}
+
 export enum ErrorCode {
   SUCCESS = 201,
   PARTIAL_SUCCESS = 207,
@@ -127,3 +130,25 @@ export enum ErrorCode {
   BAD_REQUEST = 400,
   UNREACHABLE = 404,
 }
+
+/**
+ * Represents any valid JSON value.
+ */
+export type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonArray
+  | JsonObject;
+
+/**
+ * Represents an array of JSON values.
+ */
+export type JsonArray = JsonValue[];
+
+/**
+ * Represents a JSON object, which is a key-value map where keys are strings and
+ * values are any valid JSON value.
+ */
+export type JsonObject = { [key: string]: undefined | JsonValue };
