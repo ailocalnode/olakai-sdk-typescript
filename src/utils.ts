@@ -1,14 +1,21 @@
-import type { SDKConfig, JsonValue, JsonArray, JsonObject, SanitizePattern } from "./types";
-import { StorageType } from "./types";
-import { getConfig } from "./client";
+import type {
+  SDKConfig,
+  JsonValue,
+  JsonArray,
+  JsonObject,
+  SanitizePattern,
+} from "./types";
 
 /**
- * Default sanitize patterns for sanitizing sensitive data. 
+ * Default sanitize patterns for sanitizing sensitive data.
  * @returns An array of sanitize patterns
  */
 export const DEFAULT_SANITIZE_PATTERNS: SanitizePattern[] = [
   { pattern: /\b[\w.-]+@[\w.-]+\.\w+\b/g, replacement: "[REDACTED]" }, // Email addresses
-  { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[REDACTED]" }, // Credit card numbers
+  {
+    pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
+    replacement: "[REDACTED]",
+  }, // Credit card numbers
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[REDACTED]" }, // SSN
   { pattern: /\s*:\s*"[^"]*"/g, key: "password", replacement: "[REDACTED]" }, // Password fields in JSON
   { pattern: /\s*:\s*"[^"]*"/g, key: "token", replacement: "[REDACTED]" }, // Token fields in JSON
@@ -30,17 +37,6 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
   }
 
   if (
-    config.batchSize !== undefined &&
-    (config.batchSize <= 0 || config.batchSize > 1000)
-  ) {
-    errors.push("Batch size must be between 1 and 1000");
-  }
-
-  if (config.batchTime !== undefined && config.batchTime < 0) {
-    errors.push("Batch time must be non-negative");
-  }
-
-  if (
     config.retries !== undefined &&
     (config.retries < 0 || config.retries > 10)
   ) {
@@ -49,13 +45,6 @@ export function validateConfig(config: Partial<SDKConfig>): string[] {
 
   if (config.timeout !== undefined && config.timeout <= 0) {
     errors.push("Timeout must be positive");
-  }
-
-  if (
-    config.maxStorageSize !== undefined &&
-    config.maxStorageSize <= 0
-  ) {
-    errors.push("Max storage size must be positive");
   }
 
   return errors;
@@ -69,17 +58,6 @@ function isValidUrl(string: string): boolean {
   } catch {
     return false;
   }
-}
-
-// Environment detection
-export function getEnvironment(): string {
-  if (typeof window !== "undefined") {
-    return "browser";
-  }
-  if (typeof process !== "undefined" && process.env) {
-    return process.env.NODE_ENV || "development";
-  }
-  return "unknown";
 }
 
 // Create a configuration builder pattern
@@ -106,21 +84,6 @@ export class ConfigBuilder {
     return this;
   }
 
-  enableBatching(enable: boolean = true): ConfigBuilder {
-    this.config.enableBatching = enable;
-    return this;
-  }
-
-  batchSize(size: number): ConfigBuilder {
-    this.config.batchSize = size;
-    return this;
-  }
-
-  batchTime(time: number): ConfigBuilder {
-    this.config.batchTime = time;
-    return this;
-  }
-
   retries(count: number): ConfigBuilder {
     this.config.retries = count;
     return this;
@@ -131,33 +94,8 @@ export class ConfigBuilder {
     return this;
   }
 
-  enableStorage(enable: boolean = true): ConfigBuilder {
-    this.config.enableStorage = enable;
-    return this;
-  }
-
-  storageKey(key: string): ConfigBuilder {
-    this.config.storageKey = key;
-    return this;
-  }
-
-  maxStorageSize(size: number): ConfigBuilder {
-    this.config.maxStorageSize = size;
-    return this;
-  }
-
   debug(enable: boolean = true): ConfigBuilder {
     this.config.debug = enable;
-    return this;
-  }
-
-  storageType(type: StorageType = StorageType.AUTO): ConfigBuilder {
-    this.config.storageType = type;
-    return this;
-  }
-
-  sanitizePatterns(patterns: SanitizePattern[]): ConfigBuilder {
-    this.config.sanitizePatterns = patterns;
     return this;
   }
 
@@ -176,15 +114,9 @@ export class ConfigBuilder {
       apiKey: "",
       monitorEndpoint: "",
       controlEndpoint: "",
-      enableBatching: true,
-      batchSize: 10,
-      batchTime: 5000,
+      version: "",
       retries: 3,
       timeout: 10000,
-      enableStorage: true,
-      storageKey: "olakai-sdk-queue",
-      maxStorageSize: 1000000,
-      sanitizePatterns: DEFAULT_SANITIZE_PATTERNS,
       debug: false,
       verbose: false,
       ...this.config,
@@ -203,13 +135,20 @@ export function createConfig(): ConfigBuilder {
  * @param patterns - The patterns to replace
  * @returns The sanitized data
  */
-export function sanitizeData(data: string, dataKey?: string, patterns?: SanitizePattern[]): string {
+export function sanitizeData(
+  data: string,
+  dataKey?: string,
+  patterns?: SanitizePattern[],
+): string {
   if (!patterns?.length) return data;
 
   let serialized = data;
   patterns.forEach((pattern) => {
     if (pattern.pattern) {
-      return serialized.replace(pattern.pattern, pattern.replacement || "[REDACTED]");
+      return serialized.replace(
+        pattern.pattern,
+        pattern.replacement || "[REDACTED]",
+      );
     } else if (pattern.key) {
       if (dataKey && dataKey.includes(pattern.key)) {
         return pattern.replacement || "[REDACTED]";
@@ -242,51 +181,48 @@ export function toJsonValue(val: any, sanitize: boolean = false): JsonValue {
   try {
     // Handle null and undefined
     if (val === null || val === undefined) return null;
-    
+
     // Handle primitives that are already JsonValue
-    
-    if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+
+    if (
+      typeof val === "string" ||
+      typeof val === "number" ||
+      typeof val === "boolean"
+    ) {
       if (sanitize) {
-        return sanitizeData(String(val), undefined, getConfig().sanitizePatterns);
+        return sanitizeData(String(val), undefined, DEFAULT_SANITIZE_PATTERNS);
       }
       return val;
     }
-    
+
     // Handle arrays
     if (Array.isArray(val)) {
-      return val.map(item => toJsonValue(item, sanitize)) as JsonArray;
+      return val.map((item) => toJsonValue(item, sanitize)) as JsonArray;
     }
-    
+
     // Handle objects
     if (val && typeof val === "object") {
       const result: JsonObject = {};
       for (const [key, value] of Object.entries(val)) {
         if (sanitize) {
-          result[key] = sanitizeData(String(value), key, getConfig().sanitizePatterns);
+          result[key] = sanitizeData(
+            String(value),
+            key,
+            DEFAULT_SANITIZE_PATTERNS,
+          );
         } else {
           result[key] = toJsonValue(value, sanitize);
         }
       }
       return result;
     }
-    
+
     // Fallback for other types - convert to string
     return String(val);
   } catch (error) {
     olakaiLogger(`Error converting value to JsonValue: ${error}`, "error");
     return String(val);
   }
-}
-
-/**
- * Environment detection utilities
- */
-export function isBrowser(): boolean {
-  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-}
-
-export function isNodeJS(): boolean {
-  return typeof process !== 'undefined' && process.versions && process.versions.node !== 'false';
 }
 
 /**
@@ -299,21 +235,19 @@ export async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function olakaiLogger(message: string, level: "info" | "warn" | "error" = "info"): void {
-  const config = getConfig();
+export function olakaiLogger(
+  message: string,
+  level: "info" | "warn" | "error" = "info",
+): void {
   switch (level) {
     case "info":
-      if (config.verbose) {
-        console.log(`[Olakai SDK] ${message}`);
-      }
+      console.log(`[Olakai SDK] ${message}`);
       break;
     case "warn":
       console.warn(`[Olakai SDK] ${message}`);
       break;
     case "error":
-      if (config.debug) {
-        console.error(`[Olakai SDK] ${message}`);
-      }
+      console.error(`[Olakai SDK] ${message}`);
       break;
   }
 }

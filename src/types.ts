@@ -1,7 +1,31 @@
+export type OlakaiEventParams = {
+  prompt: string;
+  response: string;
+  email?: string;
+  chatId?: string; // UUID - groups activities together in Olakai
+  task?: string;
+  subTask?: string;
+  tokens?: number;
+  requestTime?: number;
+  shouldScore?: boolean; // Whether to score this activity
+  custom_dimensions?: {
+    dim1?: string;
+    dim2?: string;
+    dim3?: string;
+    dim4?: string;
+    dim5?: string;
+    [key: string]: string | undefined;
+  };
+  custom_metrics?: {
+    metric1?: number;
+    metric2?: number;
+    metric3?: number;
+    metric4?: number;
+    metric5?: number;
+    [key: string]: number | undefined;
+  };
+};
 
-/**
- * Payload for monitoring API
- */
 export type MonitorPayload = {
   email?: string;
   chatId?: string;
@@ -17,42 +41,6 @@ export type MonitorPayload = {
 };
 
 /**
- * Payload for control API
- */
-export type ControlPayload = {
-  prompt: JsonValue;
-  email?: string;
-  chatId?: string;
-  task?: string;
-  subTask?: string;
-  tokens?: number;
-  overrideControlCriteria?: string[];
-};
-
-/**
- * Configuration for each monitored function
- */
-export type MonitorOptions<TArgs extends any[], TResult> = {
-  onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
-  // Dynamic chat and user identification
-  chatId?: string | ((args: TArgs) => string);
-  email?: string | ((args: TArgs) => string);
-  task?: string;
-  subTask?: string;
-  sanitize?: boolean; // Whether to sanitize sensitive data
-  priority?: "low" | "normal" | "high"; // Priority for batching
-  askOverride?: string[]; // List of parameters to override the control check
-};
-
-export enum StorageType {
-  MEMORY = 'memory',
-  FILE = 'file',
-  LOCAL_STORAGE = 'localStorage',
-  AUTO = 'auto',
-  DISABLED = 'disabled',
-}
-
-/**
  * Global SDK configuration
  */
 export type SDKConfig = {
@@ -60,32 +48,11 @@ export type SDKConfig = {
   monitorEndpoint: string;
   controlEndpoint: string;
   version: string;
-  enableBatching: boolean;
-  batchSize: number;
-  batchTime: number; // Time to wait before processing the next batch
   retries: number;
   timeout: number;
-  enableStorage: boolean; // Whether to enable storage at all
-  storageType: StorageType; // Type of storage to use
-  storageKey: string; // Storage key/identifier
-  maxStorageSize: number; // Maximum storage size in bytes
-  cacheDirectory?: string; // Custom cache directory for file storage (optional)  
-  sanitizePatterns: SanitizePattern[];
   debug: boolean;
   verbose: boolean;
 };
-
-/**
- * Batch request for reporting API
- */
-export type BatchRequest = {
-  id: string;
-  payload: MonitorPayload[];
-  timestamp: number;
-  retries: number;
-  priority: "low" | "normal" | "high";
-};
-
 
 /**
  * Response for monitoring API
@@ -121,7 +88,35 @@ export type SanitizePattern = {
   pattern?: RegExp;
   key?: string;
   replacement?: string;
-}
+};
+
+/**
+ * Payload for control API
+ */
+export type ControlPayload = {
+  prompt: JsonValue;
+  email?: string;
+  chatId?: string;
+  task?: string;
+  subTask?: string;
+  tokens?: number;
+  overrideControlCriteria?: string[];
+};
+
+/**
+ * Configuration for each monitored function
+ */
+export type MonitorOptions<TArgs extends any[], TResult> = {
+  onMonitoredFunctionError?: boolean; // Whether to throw an error if the monitored function fails
+  // Dynamic chat and user identification
+  chatId?: string | ((args: TArgs) => string);
+  email?: string | ((args: TArgs) => string);
+  task?: string;
+  subTask?: string;
+  sanitize?: boolean; // Whether to sanitize sensitive data
+  priority?: "low" | "normal" | "high"; // Priority for batching
+  askOverride?: string[]; // List of parameters to override the control check
+};
 
 export enum ErrorCode {
   SUCCESS = 201,
