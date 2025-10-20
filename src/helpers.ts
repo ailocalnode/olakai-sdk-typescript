@@ -102,7 +102,7 @@ export async function olakaiReport(
       prompt: toJsonValue(prompt, options?.sanitize),
       response: toJsonValue(response, options?.sanitize),
       email: options?.email || "anonymous@olakai.ai",
-      chatId: options?.chatId || "123",
+      chatId: options?.chatId,
       task: options?.task,
       subTask: options?.subTask,
       tokens: options?.tokens || 0,

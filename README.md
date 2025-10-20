@@ -52,7 +52,7 @@ olakai("event", "ai_activity", {
   task: "Content Generation",
   email: "user@example.com",
   tokens: 150,
-  chatId: "session-abc123", // Groups related interactions
+  chatId: "cckej2lc40c0np1s3mcvef5ss", // Groups related interactions
   custom_dimensions: {
     dim1: "EMEA",
     dim2: "United Kingdom",
@@ -228,7 +228,6 @@ const monitoredFunction = olakaiMonitor(
     task: "Content Generation",
     subTask: "Blog Post",
     email: "user@example.com",
-    chatId: "session-123",
   },
 );
 ```
