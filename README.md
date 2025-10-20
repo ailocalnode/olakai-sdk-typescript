@@ -1,6 +1,6 @@
 # Olakai SDK
 
-A TypeScript SDK for tracking AI interactions with simple event-based API. Monitor your AI applications, track usage patterns, and enforce content policies with just a few lines of code.
+A TypeScript SDK for tracking AI interactions with simple event-based API. Monitor your AI agents, applications, track usage patterns, and enforce content policies with just a few lines of code.
 
 [![npm version](https://badge.fury.io/js/@olakai%2Fsdk.svg)](https://badge.fury.io/js/@olakai%2Fsdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -12,7 +12,6 @@ A TypeScript SDK for tracking AI interactions with simple event-based API. Monit
 - **Content Control**: Automatically block sensitive or inappropriate content
 - **Analytics**: Get insights into AI usage patterns and performance
 - **Simple Integration**: Works with a simple event-based API - just call `olakai()`
-- **Privacy-First**: Built-in data sanitization and user privacy controls
 - **Production Ready**: Handles errors gracefully, works offline, retries automatically
 
 ## Installation
@@ -55,8 +54,9 @@ olakai("event", "ai_activity", {
   tokens: 150,
   chatId: "session-abc123", // Groups related interactions
   custom_dimensions: {
-    dim1: "e-commerce",
-    dim2: "product-description",
+    dim1: "EMEA",
+    dim2: "United Kingdom",
+    dim3: "Internal Processing",
   },
   custom_metrics: {
     metric1: 150,
@@ -89,9 +89,8 @@ async function generateProductDescription(product: Product) {
   olakai("event", "ai_activity", {
     prompt,
     response: description,
-    task: "Product Description",
-    subTask: "E-commerce",
-    email: product.ownerEmail,
+    task: "Communication Strategy",
+    subTask: "message crafting",
     tokens: response.usage?.total_tokens || 0,
     chatId: `product-${product.id}`,
     custom_dimensions: {
@@ -131,9 +130,8 @@ async function handleCustomerQuery(query: string, customerId: string) {
   olakai("event", "ai_activity", {
     prompt: query,
     response: answer,
-    task: "Customer Support",
-    subTask: "Query Resolution",
-    email: `customer-${customerId}@company.com`,
+    task: "Customer Experience",
+    subTask: "user onboarding support",
     tokens: response.usage?.total_tokens || 0,
     chatId: `support-${customerId}`,
     custom_dimensions: {
@@ -144,41 +142,6 @@ async function handleCustomerQuery(query: string, customerId: string) {
   });
 
   return answer;
-}
-```
-
-### Content Moderation
-
-```typescript
-import { olakai, olakaiMonitor } from "@olakai/sdk";
-
-// Wrap your AI function for automatic monitoring
-const moderateContent = olakaiMonitor(
-  async (content: string) => {
-    const response = await openai.moderations.create({
-      input: content,
-    });
-
-    return {
-      flagged: response.results[0].flagged,
-      categories: response.results[0].categories,
-    };
-  },
-  {
-    task: "Content Moderation",
-    subTask: "Safety Check",
-  },
-);
-
-// Use normally - monitoring happens automatically
-try {
-  const result = await moderateContent("User submitted content here...");
-  // Content is safe
-} catch (error) {
-  if (error.name === "OlakaiBlockedError") {
-    // Content was blocked by Olakai's control system
-    console.log("Content blocked:", error.details);
-  }
 }
 ```
 
@@ -239,6 +202,18 @@ olakai("event", "ai_activity", {
 });
 ```
 
+### `olakaiReport(prompt, response, options)`
+
+Most common: direct reporting without function wrapping.
+
+```typescript
+await olakaiReport("Generate a blog post", "Here's your blog post content...", {
+  task: "Content Generation",
+  email: "user@example.com",
+  tokens: 150,
+});
+```
+
 ### `olakaiMonitor(fn, options)`
 
 Wrap functions for automatic tracking.
@@ -256,18 +231,6 @@ const monitoredFunction = olakaiMonitor(
     chatId: "session-123",
   },
 );
-```
-
-### `olakaiReport(prompt, response, options)`
-
-Direct reporting without function wrapping.
-
-```typescript
-await olakaiReport("Generate a blog post", "Here's your blog post content...", {
-  task: "Content Generation",
-  email: "user@example.com",
-  tokens: 150,
-});
 ```
 
 ## Error Handling
@@ -384,44 +347,6 @@ try {
   // Log but don't break your app
   console.warn("Failed to track AI event:", error);
 }
-```
-
-## Migration Guide
-
-### From Previous Versions
-
-If you're upgrading from an older version:
-
-```typescript
-// Old way (still works)
-import { initClient, olakaiReport } from "@olakai/sdk";
-
-initClient("api-key", "https://app.olakai.ai");
-await olakaiReport(prompt, response, options);
-
-// New way (recommended)
-import { olakaiConfig, olakai } from "@olakai/sdk";
-
-olakaiConfig({ apiKey: "api-key", endpoint: "https://app.olakai.ai" });
-olakai("event", "ai_activity", { prompt, response, ...options });
-```
-
-### From Other Analytics Tools
-
-```typescript
-// Generic analytics tracking
-analytics.track("ai_interaction", {
-  custom_parameter: value,
-});
-
-// Olakai SDK
-olakai("event", "ai_activity", {
-  prompt: "user input",
-  response: "ai output",
-  custom_dimensions: {
-    dim1: value,
-  },
-});
 ```
 
 ## Troubleshooting
