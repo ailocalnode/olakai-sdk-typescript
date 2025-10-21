@@ -50,15 +50,15 @@ olakai("event", "ai_activity", {
   response:
     "Experience crystal-clear sound with our premium wireless headphones...",
   task: "Content Generation",
-  email: "user@example.com",
+  userEmail: "user@example.com",
   tokens: 150,
   chatId: "cckej2lc40c0np1s3mcvef5ss", // Groups related interactions
-  custom_dimensions: {
+  customDimensions: {
     dim1: "EMEA",
     dim2: "United Kingdom",
     dim3: "Internal Processing",
   },
-  custom_metrics: {
+  customMetrics: {
     metric1: 150,
     metric2: 2.5,
   },
@@ -93,12 +93,12 @@ async function generateProductDescription(product: Product) {
     subTask: "message crafting",
     tokens: response.usage?.total_tokens || 0,
     chatId: `product-${product.id}`,
-    custom_dimensions: {
+    customDimensions: {
       dim1: product.category,
       dim2: product.brand,
       dim3: "gpt-4",
     },
-    custom_metrics: {
+    customMetrics: {
       metric1: product.price,
       metric2: response.usage?.total_tokens || 0,
     },
@@ -134,7 +134,7 @@ async function handleCustomerQuery(query: string, customerId: string) {
     subTask: "user onboarding support",
     tokens: response.usage?.total_tokens || 0,
     chatId: `support-${customerId}`,
-    custom_dimensions: {
+    customDimensions: {
       dim1: "customer-support",
       dim2: "gpt-3.5-turbo",
       dim3: "tier-1",
@@ -170,7 +170,7 @@ olakai("event", "ai_activity", {
   response: string;      // The AI response/output
 
   // Optional - User & Session
-  email?: string;        // User email for tracking
+  userEmail?: string;        // User email for tracking
   chatId?: string;       // UUID to group related activities
 
   // Optional - Categorization
@@ -183,7 +183,7 @@ olakai("event", "ai_activity", {
   shouldScore?: boolean; // Whether to score this activity
 
   // Optional - Custom Data
-  custom_dimensions?: {  // String dimensions for categorization
+  customDimensions?: {  // String dimensions for categorization
     dim1?: string;
     dim2?: string;
     dim3?: string;
@@ -191,7 +191,7 @@ olakai("event", "ai_activity", {
     dim5?: string;
     [key: string]: string | undefined;
   };
-  custom_metrics?: {     // Numeric metrics for analysis
+  customMetrics?: {     // Numeric metrics for analysis
     metric1?: number;
     metric2?: number;
     metric3?: number;
@@ -209,7 +209,7 @@ Most common: direct reporting without function wrapping.
 ```typescript
 await olakaiReport("Generate a blog post", "Here's your blog post content...", {
   task: "Content Generation",
-  email: "user@example.com",
+  userEmail: "user@example.com",
   tokens: 150,
 });
 ```
@@ -227,7 +227,7 @@ const monitoredFunction = olakaiMonitor(
   {
     task: "Content Generation",
     subTask: "Blog Post",
-    email: "user@example.com",
+    userEmail: "user@example.com",
   },
 );
 ```
@@ -322,13 +322,13 @@ olakai("event", "ai_activity", {
 olakai("event", "ai_activity", {
   prompt,
   response,
-  custom_dimensions: {
+  customDimensions: {
     dim1: "e-commerce", // Business domain
     dim2: "product-description", // Use case
     dim3: "gpt-4", // AI model
     dim4: "premium-tier", // User tier
   },
-  custom_metrics: {
+  customMetrics: {
     metric1: productPrice, // Product value
     metric2: responseTime, // Performance
     metric3: tokenCount, // Cost
