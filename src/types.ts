@@ -1,14 +1,14 @@
 export type OlakaiEventParams = {
   prompt: string;
   response: string;
-  email?: string;
+  userEmail?: string;
   chatId?: string; // UUID - groups activities together in Olakai
   task?: string;
   subTask?: string;
   tokens?: number;
   requestTime?: number;
   shouldScore?: boolean; // Whether to score this activity
-  custom_dimensions?: {
+  customDimensions?: {
     dim1?: string;
     dim2?: string;
     dim3?: string;
@@ -16,7 +16,7 @@ export type OlakaiEventParams = {
     dim5?: string;
     [key: string]: string | undefined;
   };
-  custom_metrics?: {
+  customMetrics?: {
     metric1?: number;
     metric2?: number;
     metric3?: number;
