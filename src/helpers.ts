@@ -34,12 +34,15 @@ export function olakai(
 ): void {
   // Fire and forget - don't await
   olakaiReport(params.prompt, params.response, {
-    email: params.userEmail,
+    userEmail: params.userEmail,
     chatId: params.chatId,
     task: params.task,
     subTask: params.subTask,
     tokens: params.tokens,
     requestTime: params.requestTime,
+    shouldScore: params.shouldScore,
+    customDimensions: params.customDimensions,
+    customMetrics: params.customMetrics,
     sanitize: false, // Don't sanitize for event-based usage
   }).catch((error) => {
     // Silent fail for event-based usage
@@ -88,8 +91,25 @@ export async function olakaiReport(
     subTask?: string;
     tokens?: number;
     requestTime?: number;
+    shouldScore?: boolean;
     sanitize?: boolean;
     priority?: "low" | "normal" | "high";
+    customDimensions?: {
+      dim1?: string;
+      dim2?: string;
+      dim3?: string;
+      dim4?: string;
+      dim5?: string;
+      [key: string]: string | undefined;
+    };
+    customMetrics?: {
+      metric1?: number;
+      metric2?: number;
+      metric3?: number;
+      metric4?: number;
+      metric5?: number;
+      [key: string]: number | undefined;
+    };
   },
 ): Promise<void> {
   const { sendToAPI, getConfig } = await import("./client");
@@ -109,6 +129,9 @@ export async function olakaiReport(
       requestTime: options?.requestTime || 0,
       blocked: false,
       sensitivity: [],
+      shouldScore: options?.shouldScore,
+      customDimensions: options?.customDimensions,
+      customMetrics: options?.customMetrics,
     };
 
     await sendToAPI(payload, "monitoring");
