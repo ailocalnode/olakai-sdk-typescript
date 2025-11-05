@@ -34,7 +34,7 @@ export function olakai(
 ): void {
   // Fire and forget - don't await
   olakaiReport(params.prompt, params.response, {
-    userEmail: params.userEmail,
+    email: params.userEmail,
     chatId: params.chatId,
     task: params.task,
     subTask: params.subTask,
