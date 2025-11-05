@@ -38,6 +38,23 @@ export type MonitorPayload = {
   errorMessage?: string;
   blocked?: boolean;
   sensitivity?: string[];
+  shouldScore?: boolean;
+  customDimensions?: {
+    dim1?: string;
+    dim2?: string;
+    dim3?: string;
+    dim4?: string;
+    dim5?: string;
+    [key: string]: string | undefined;
+  };
+  customMetrics?: {
+    metric1?: number;
+    metric2?: number;
+    metric3?: number;
+    metric4?: number;
+    metric5?: number;
+    [key: string]: number | undefined;
+  };
 };
 
 /**
