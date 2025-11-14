@@ -18,27 +18,6 @@ import {
 
 let config: SDKConfig;
 
-let isOnline = true; // Default to online for server environments
-
-// Setup online/offline detection for browser environments
-function initOnlineDetection() {
-  if (typeof window !== "undefined" && typeof navigator !== "undefined") {
-    // Browser environment - use navigator.onLine and window events
-    isOnline = navigator.onLine;
-
-    window.addEventListener("online", () => {
-      isOnline = true;
-    });
-    window.addEventListener("offline", () => {
-      isOnline = false;
-    });
-  } else {
-    // Server environment - assume always online
-    isOnline = true;
-  }
-  olakaiLogger(`Online detection initialized. Status: ${isOnline}`, "info");
-}
-
 /**
  * Initialize the SDK
  * @param apiKey - The API key
@@ -94,9 +73,6 @@ export async function initClient(
     );
   }
   olakaiLogger(`Config: ${JSON.stringify(config)}`, "info");
-
-  // Initialize online detection
-  initOnlineDetection();
 }
 
 /**

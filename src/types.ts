@@ -164,3 +164,60 @@ export type JsonArray = JsonValue[];
  * values are any valid JSON value.
  */
 export type JsonObject = { [key: string]: undefined | JsonValue };
+
+/**
+ * LLM Provider types
+ */
+export type LLMProvider = "openai" | "anthropic" | "custom";
+
+/**
+ * Metadata automatically extracted from LLM calls
+ */
+export type LLMMetadata = {
+  provider: LLMProvider;
+  model: string;
+  apiKey?: string; // Optional API key for cost tracking
+  tokens?: {
+    prompt?: number;
+    completion?: number;
+    total?: number;
+  };
+  parameters?: Record<string, any>; // temperature, max_tokens, etc.
+  timing?: {
+    startTime: number;
+    endTime: number;
+    duration: number;
+  };
+  functionCalls?: any[];
+  streamMode?: boolean;
+  finishReason?: string;
+};
+
+/**
+ * Enhanced MonitorPayload with LLM metadata
+ */
+export type EnhancedMonitorPayload = MonitorPayload & {
+  llmMetadata?: LLMMetadata;
+};
+
+/**
+ * Configuration for LLM SDK wrapper
+ */
+export type LLMWrapperConfig = {
+  provider: LLMProvider;
+  defaultContext?: {
+    userEmail?: string;
+    chatId?: string;
+    task?: string;
+    subTask?: string;
+  };
+  enableControl?: boolean; // Whether to use Control API (default: false)
+  sanitize?: boolean;
+};
+
+/**
+ * Enhanced SDK configuration with Control API option
+ */
+export type EnhancedSDKConfig = SDKConfig & {
+  enableControl?: boolean; // Global control API setting (default: false)
+};

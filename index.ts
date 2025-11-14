@@ -1,15 +1,23 @@
-export { initClient } from "./src/client";
+// New simplified SDK (recommended)
+export { OlakaiSDK } from "./src/sdk";
 
-// Export simplified helper functions
+// Provider exports for extensibility
+export { BaseLLMProvider, OpenAIProvider } from "./src/providers";
+
+// Legacy exports (deprecated - for backwards compatibility)
+export { initClient } from "./src/client";
 export {
   olakaiMonitor,
   olakaiReport,
   olakai,
   olakaiConfig,
 } from "./src/helpers";
+
+// Type exports
 export * from "./src/types";
 
-// Re-export utilities
+// Utility exports
 export { DEFAULT_SANITIZE_PATTERNS } from "./src/utils";
 
+// Exception exports
 export { OlakaiBlockedError, OlakaiSDKError } from "./src/exceptions";
