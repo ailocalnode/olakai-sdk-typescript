@@ -221,3 +221,27 @@ export type LLMWrapperConfig = {
 export type EnhancedSDKConfig = SDKConfig & {
   enableControl?: boolean; // Global control API setting (default: false)
 };
+
+/**
+ * Context for Vercel AI SDK integration
+ */
+export type VercelAIContext = {
+  userEmail?: string;
+  chatId?: string;
+  task?: string;
+  subTask?: string;
+  apiKey?: string; // Provider API key for cost tracking
+  enableControl?: boolean; // Override global Control API setting
+  sanitize?: boolean;
+};
+
+/**
+ * Extended usage information from Vercel AI SDK
+ */
+export type VercelAIUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  reasoningTokens?: number; // New in AI SDK 5
+  cachedInputTokens?: number;
+};

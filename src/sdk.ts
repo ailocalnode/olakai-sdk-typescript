@@ -6,8 +6,10 @@ import type {
   EnhancedMonitorPayload,
   ControlPayload,
   ControlAPIResponse,
+  VercelAIContext,
 } from "./types";
 import { OpenAIProvider } from "./providers/openai";
+import { VercelAIIntegration } from "./integrations/vercel-ai";
 import { sendToAPI, getConfig, initClient } from "./client";
 import { olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
@@ -20,6 +22,7 @@ import packageJson from "../package.json";
 export class OlakaiSDK {
   private config: EnhancedSDKConfig;
   private initialized: boolean = false;
+  private vercelAI: VercelAIIntegration;
 
   constructor(config: {
     apiKey: string;
@@ -49,6 +52,12 @@ export class OlakaiSDK {
       verbose: config.verbose ?? false,
       version: packageJson.version,
     };
+
+    // Initialize Vercel AI integration
+    this.vercelAI = new VercelAIIntegration({
+      enableControl: this.config.enableControl,
+      debug: this.config.debug,
+    });
   }
 
   /**
@@ -364,5 +373,73 @@ export class OlakaiSDK {
    */
   getConfig(): EnhancedSDKConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Vercel AI SDK Integration: generateText
+   * Wraps Vercel AI SDK's generateText function for automatic tracking
+   * Supports 25+ LLM providers (OpenAI, Anthropic, Google, Mistral, etc.)
+   *
+   * @param params - Vercel AI SDK generateText parameters
+   * @param context - Olakai tracking context
+   * @returns generateText result with all metadata
+   *
+   * @example
+   * ```typescript
+   * import { openai } from '@ai-sdk/openai';
+   *
+   * const result = await olakai.generateText({
+   *   model: openai('gpt-4'),
+   *   prompt: 'Hello world'
+   * }, {
+   *   task: 'Greeting',
+   *   apiKey: 'sk-...'
+   * });
+   * ```
+   */
+  async generateText(params: any, context?: VercelAIContext): Promise<any> {
+    if (!this.initialized) {
+      throw new Error(
+        "[Olakai SDK] SDK not initialized. Call init() first.",
+      );
+    }
+
+    return this.vercelAI.generateText(params, context);
+  }
+
+  /**
+   * Vercel AI SDK Integration: streamText
+   * Wraps Vercel AI SDK's streamText function for automatic tracking
+   * Supports 25+ LLM providers (OpenAI, Anthropic, Google, Mistral, etc.)
+   *
+   * @param params - Vercel AI SDK streamText parameters
+   * @param context - Olakai tracking context
+   * @returns streamText result with streaming support
+   *
+   * @example
+   * ```typescript
+   * import { openai } from '@ai-sdk/openai';
+   *
+   * const result = await olakai.streamText({
+   *   model: openai('gpt-4'),
+   *   prompt: 'Write a story'
+   * }, {
+   *   task: 'Creative Writing',
+   *   apiKey: 'sk-...'
+   * });
+   *
+   * for await (const chunk of result.textStream) {
+   *   console.log(chunk);
+   * }
+   * ```
+   */
+  async streamText(params: any, context?: VercelAIContext): Promise<any> {
+    if (!this.initialized) {
+      throw new Error(
+        "[Olakai SDK] SDK not initialized. Call init() first.",
+      );
+    }
+
+    return this.vercelAI.streamText(params, context);
   }
 }

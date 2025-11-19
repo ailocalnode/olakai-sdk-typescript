@@ -4,6 +4,9 @@ export { OlakaiSDK } from "./src/sdk";
 // Provider exports for extensibility
 export { BaseLLMProvider, OpenAIProvider } from "./src/providers";
 
+// Vercel AI SDK integration
+export { VercelAIIntegration } from "./src/integrations/vercel-ai";
+
 // Legacy exports (deprecated - for backwards compatibility)
 export { initClient } from "./src/client";
 export {
