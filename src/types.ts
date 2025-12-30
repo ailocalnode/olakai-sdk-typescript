@@ -2,32 +2,20 @@ export type OlakaiEventParams = {
   prompt: string;
   response: string;
   userEmail?: string;
+  userId?: string; // SDK client's user ID for tracking
   chatId?: string; // UUID - groups activities together in Olakai
   task?: string;
   subTask?: string;
   tokens?: number;
   requestTime?: number;
   shouldScore?: boolean; // Whether to score this activity
-  customDimensions?: {
-    dim1?: string;
-    dim2?: string;
-    dim3?: string;
-    dim4?: string;
-    dim5?: string;
-    [key: string]: string | undefined;
-  };
-  customMetrics?: {
-    metric1?: number;
-    metric2?: number;
-    metric3?: number;
-    metric4?: number;
-    metric5?: number;
-    [key: string]: number | undefined;
-  };
+  customDimensions?: Record<string, string | undefined>;
+  customMetrics?: Record<string, number | undefined>;
 };
 
 export type MonitorPayload = {
   email?: string;
+  userId?: string; // SDK client's user ID for tracking
   chatId?: string;
   task?: string;
   subTask?: string;
@@ -39,22 +27,8 @@ export type MonitorPayload = {
   blocked?: boolean;
   sensitivity?: string[];
   shouldScore?: boolean;
-  customDimensions?: {
-    dim1?: string;
-    dim2?: string;
-    dim3?: string;
-    dim4?: string;
-    dim5?: string;
-    [key: string]: string | undefined;
-  };
-  customMetrics?: {
-    metric1?: number;
-    metric2?: number;
-    metric3?: number;
-    metric4?: number;
-    metric5?: number;
-    [key: string]: number | undefined;
-  };
+  customDimensions?: Record<string, string | undefined>;
+  customMetrics?: Record<string, number | undefined>;
 };
 
 /**
@@ -207,9 +181,12 @@ export type LLMWrapperConfig = {
   provider: LLMProvider;
   defaultContext?: {
     userEmail?: string;
+    userId?: string; // SDK client's user ID for tracking
     chatId?: string;
     task?: string;
     subTask?: string;
+    customDimensions?: Record<string, string | undefined>;
+    customMetrics?: Record<string, number | undefined>;
   };
   enableControl?: boolean; // Whether to use Control API (default: false)
   sanitize?: boolean;
@@ -227,12 +204,15 @@ export type EnhancedSDKConfig = SDKConfig & {
  */
 export type VercelAIContext = {
   userEmail?: string;
+  userId?: string; // SDK client's user ID for tracking
   chatId?: string;
   task?: string;
   subTask?: string;
   apiKey?: string; // Provider API key for cost tracking
   enableControl?: boolean; // Override global Control API setting
   sanitize?: boolean;
+  customDimensions?: Record<string, string | undefined>;
+  customMetrics?: Record<string, number | undefined>;
 };
 
 /**

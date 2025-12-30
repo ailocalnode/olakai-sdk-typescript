@@ -112,7 +112,7 @@ The SDK uses a singleton config initialized via `initClient()` or `olakaiConfig(
 - Debug/verbose flags
 
 ### Type Safety
-- The SDK uses strict TypeScript with `strict: true` in tsconfig.json
+- The SDK uses strict TypeScript with `strict: true` in tsconfig.json`
 - Monitoring options are generic: `MonitorOptions<TArgs, TResult>` where TArgs and TResult are inferred from the wrapped function
 - Helper functions use automatic type inference (no manual type parameters needed)
 
