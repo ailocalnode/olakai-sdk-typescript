@@ -5,6 +5,24 @@ All notable changes to the Olakai SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2024-12-30
+
+### Added
+
+- **`userId` field** - Added `userId` to `OlakaiEventParams`, `MonitorPayload`, `VercelAIContext`, and `LLMWrapperConfig.defaultContext` for explicit user tracking
+- **Flexible custom dimensions** - `customDimensions` now uses `Record<string, string | undefined>` for arbitrary key names
+- **Flexible custom metrics** - `customMetrics` now uses `Record<string, number | undefined>` for arbitrary key names
+
+### Changed
+
+- Updated type definitions to align with backend monitoring API
+- Custom dimensions/metrics no longer limited to `dim1-5` and `metric1-5` patterns
+
+### Compatibility
+
+- Backwards compatible with existing code using `dim1-5` and `metric1-5` keys
+- New `userId` field is optional
+
 ## [2.0.0] - 2024-11-14
 
 ### 🎉 Major Release - Complete Refactor
