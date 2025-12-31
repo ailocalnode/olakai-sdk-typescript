@@ -5,6 +5,23 @@ All notable changes to the Olakai SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2024-12-30
+
+### Added
+
+- **Default endpoint** - Added default endpoint `https://app.olakai.ai` for both `olakaiConfig()` and `OlakaiSDK` class
+- The `endpoint` parameter in `olakaiConfig()` is now optional
+- The `monitoringEndpoint` parameter in `OlakaiSDK` constructor is now optional
+
+### Changed
+
+- SDK no longer throws `URLConfigurationError` when endpoint is not provided - uses default instead
+
+### Compatibility
+
+- Fully backwards compatible - existing code with explicit endpoints continues to work
+- Users can now initialize with just `olakaiConfig({ apiKey: "..." })` without specifying endpoint
+
 ## [1.5.0] - 2024-12-30
 
 ### Added

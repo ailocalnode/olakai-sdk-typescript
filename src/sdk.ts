@@ -24,6 +24,8 @@ export class OlakaiSDK {
   private initialized: boolean = false;
   private vercelAI: VercelAIIntegration;
 
+  private static readonly DEFAULT_ENDPOINT = "https://app.olakai.ai";
+
   constructor(config: {
     apiKey: string;
     monitoringEndpoint?: string;
@@ -37,7 +39,7 @@ export class OlakaiSDK {
     // Build full config with defaults
     const domainUrl = config.monitoringEndpoint
       ? config.monitoringEndpoint.replace("/api/monitoring/prompt", "")
-      : "";
+      : OlakaiSDK.DEFAULT_ENDPOINT;
 
     this.config = {
       apiKey: config.apiKey,

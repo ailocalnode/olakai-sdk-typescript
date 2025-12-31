@@ -34,7 +34,7 @@ import { olakaiConfig } from "@olakai/sdk";
 // Initialize once in your app
 olakaiConfig({
   apiKey: "your-olakai-api-key",
-  endpoint: "https://app.olakai.ai",
+  // endpoint is optional, defaults to https://app.olakai.ai
   debug: false, // Set to true for development
 });
 ```
@@ -154,7 +154,7 @@ Initialize the SDK with your configuration.
 ```typescript
 olakaiConfig({
   apiKey: string;        // Required: Your Olakai API key
-  endpoint: string;       // Required: Your Olakai endpoint URL
+  endpoint?: string;     // Optional: API endpoint (default: https://app.olakai.ai)
   debug?: boolean;       // Optional: Enable debug logging (default: false)
 });
 ```
@@ -376,7 +376,6 @@ Enable debug logging to troubleshoot issues:
 ```typescript
 olakaiConfig({
   apiKey: "your-key",
-  endpoint: "https://app.olakai.ai",
   debug: true, // Shows detailed logs
 });
 ```

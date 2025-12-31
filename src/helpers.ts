@@ -5,17 +5,20 @@
 import { monitor } from "./monitor";
 import type { MonitorOptions, OlakaiEventParams } from "./types";
 
+const DEFAULT_ENDPOINT = "https://app.olakai.ai";
+
 /**
  * Event-based configuration function
  * @param config - Configuration object
  */
 export async function olakaiConfig(config: {
   apiKey: string;
-  endpoint: string;
+  endpoint?: string;
   debug?: boolean;
 }): Promise<void> {
   const { initClient } = await import("./client");
-  await initClient(config.apiKey, config.endpoint, {
+  const endpoint = config.endpoint || DEFAULT_ENDPOINT;
+  await initClient(config.apiKey, endpoint, {
     debug: config.debug || false,
     verbose: config.debug || false,
   });
