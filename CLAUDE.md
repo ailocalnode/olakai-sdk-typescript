@@ -66,7 +66,7 @@ Re-exports all public APIs from `src/`:
 - Supports both sync and async function monitoring (always returns Promise)
 
 **`src/types.ts`** - TypeScript type definitions
-- `OlakaiEventParams`: Event-based API parameters (includes customDimensions/customMetrics)
+- `OlakaiEventParams`: Event-based API parameters (includes customData for account-specific values)
 - `MonitorPayload`: Payload sent to monitoring API
 - `ControlPayload`: Payload sent to control API
 - `MonitorOptions<TArgs, TResult>`: Configuration for monitored functions

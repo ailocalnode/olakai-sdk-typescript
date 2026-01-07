@@ -286,16 +286,14 @@ export class OlakaiSDK {
       blocked,
       errorMessage,
       llmMetadata: metadata,
-      // Add LLM metadata to custom dimensions for visibility
-      customDimensions: {
-        dim1: metadata.provider,
-        dim2: metadata.model,
-        dim3: metadata.finishReason,
-      },
-      customMetrics: {
-        metric1: metadata.tokens?.prompt,
-        metric2: metadata.tokens?.completion,
-        metric3: metadata.tokens?.total,
+      // Add LLM metadata to custom data for visibility
+      customData: {
+        provider: metadata.provider,
+        model: metadata.model,
+        finishReason: metadata.finishReason,
+        promptTokens: metadata.tokens?.prompt,
+        completionTokens: metadata.tokens?.completion,
+        totalTokens: metadata.tokens?.total,
       },
     };
 

@@ -53,14 +53,12 @@ olakai("event", "ai_activity", {
   userEmail: "user@example.com",
   tokens: 150,
   chatId: "cckej2lc40c0np1s3mcvef5ss", // Groups related interactions
-  customDimensions: {
-    dim1: "EMEA",
-    dim2: "United Kingdom",
-    dim3: "Internal Processing",
-  },
-  customMetrics: {
-    metric1: 150,
-    metric2: 2.5,
+  customData: {
+    region: "EMEA",
+    country: "United Kingdom",
+    processingType: "Internal Processing",
+    tokenCount: 150,
+    processingTime: 2.5,
   },
 });
 ```
@@ -93,14 +91,12 @@ async function generateProductDescription(product: Product) {
     subTask: "message crafting",
     tokens: response.usage?.total_tokens || 0,
     chatId: `product-${product.id}`,
-    customDimensions: {
-      dim1: product.category,
-      dim2: product.brand,
-      dim3: "gpt-4",
-    },
-    customMetrics: {
-      metric1: product.price,
-      metric2: response.usage?.total_tokens || 0,
+    customData: {
+      category: product.category,
+      brand: product.brand,
+      model: "gpt-4",
+      price: product.price,
+      tokens: response.usage?.total_tokens || 0,
     },
   });
 
@@ -134,10 +130,10 @@ async function handleCustomerQuery(query: string, customerId: string) {
     subTask: "user onboarding support",
     tokens: response.usage?.total_tokens || 0,
     chatId: `support-${customerId}`,
-    customDimensions: {
-      dim1: "customer-support",
-      dim2: "gpt-3.5-turbo",
-      dim3: "tier-1",
+    customData: {
+      domain: "customer-support",
+      model: "gpt-3.5-turbo",
+      tier: "tier-1",
     },
   });
 
@@ -183,22 +179,7 @@ olakai("event", "ai_activity", {
   shouldScore?: boolean; // Whether to score this activity
 
   // Optional - Custom Data
-  customDimensions?: {  // String dimensions for categorization
-    dim1?: string;
-    dim2?: string;
-    dim3?: string;
-    dim4?: string;
-    dim5?: string;
-    [key: string]: string | undefined;
-  };
-  customMetrics?: {     // Numeric metrics for analysis
-    metric1?: number;
-    metric2?: number;
-    metric3?: number;
-    metric4?: number;
-    metric5?: number;
-    [key: string]: number | undefined;
-  };
+  customData?: Record<string, string | number | boolean | undefined>;
 });
 ```
 
@@ -316,22 +297,20 @@ olakai("event", "ai_activity", {
 });
 ```
 
-### 3. Use Custom Dimensions for Analytics
+### 3. Use Custom Data for Analytics
 
 ```typescript
 olakai("event", "ai_activity", {
   prompt,
   response,
-  customDimensions: {
-    dim1: "e-commerce", // Business domain
-    dim2: "product-description", // Use case
-    dim3: "gpt-4", // AI model
-    dim4: "premium-tier", // User tier
-  },
-  customMetrics: {
-    metric1: productPrice, // Product value
-    metric2: responseTime, // Performance
-    metric3: tokenCount, // Cost
+  customData: {
+    domain: "e-commerce",           // Business domain
+    useCase: "product-description", // Use case
+    model: "gpt-4",                 // AI model
+    userTier: "premium-tier",       // User tier
+    productPrice: productPrice,     // Product value
+    responseTime: responseTime,     // Performance
+    tokenCount: tokenCount,         // Cost
   },
 });
 ```

@@ -44,8 +44,7 @@ export function olakai(
     tokens: params.tokens,
     requestTime: params.requestTime,
     shouldScore: params.shouldScore,
-    customDimensions: params.customDimensions,
-    customMetrics: params.customMetrics,
+    customData: params.customData,
     sanitize: false, // Don't sanitize for event-based usage
   }).catch((error) => {
     // Silent fail for event-based usage
@@ -97,22 +96,7 @@ export async function olakaiReport(
     shouldScore?: boolean;
     sanitize?: boolean;
     priority?: "low" | "normal" | "high";
-    customDimensions?: {
-      dim1?: string;
-      dim2?: string;
-      dim3?: string;
-      dim4?: string;
-      dim5?: string;
-      [key: string]: string | undefined;
-    };
-    customMetrics?: {
-      metric1?: number;
-      metric2?: number;
-      metric3?: number;
-      metric4?: number;
-      metric5?: number;
-      [key: string]: number | undefined;
-    };
+    customData?: Record<string, string | number | boolean | undefined>;
   },
 ): Promise<void> {
   const { sendToAPI, getConfig } = await import("./client");
@@ -133,8 +117,7 @@ export async function olakaiReport(
       blocked: false,
       sensitivity: [],
       shouldScore: options?.shouldScore,
-      customDimensions: options?.customDimensions,
-      customMetrics: options?.customMetrics,
+      customData: options?.customData,
     };
 
     await sendToAPI(payload, "monitoring");
