@@ -7,11 +7,12 @@ import type {
   ControlPayload,
   ControlAPIResponse,
   VercelAIContext,
+  OlakaiEventParams,
 } from "./types";
 import { OpenAIProvider } from "./providers/openai";
 import { VercelAIIntegration } from "./integrations/vercel-ai";
-import { sendToAPI, getConfig, initClient } from "./client";
-import { olakaiLogger, toJsonValue } from "./utils";
+import { sendToAPI, initClient } from "./client";
+import { createId, olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import packageJson from "../package.json";
 
@@ -23,6 +24,7 @@ export class OlakaiSDK {
   private config: EnhancedSDKConfig;
   private initialized: boolean = false;
   private vercelAI: VercelAIIntegration;
+  private sessionId: string;
 
   private static readonly DEFAULT_ENDPOINT = "https://app.olakai.ai";
 
@@ -60,6 +62,8 @@ export class OlakaiSDK {
       enableControl: this.config.enableControl,
       debug: this.config.debug,
     });
+
+    this.sessionId = createId();
   }
 
   /**
@@ -221,7 +225,7 @@ export class OlakaiSDK {
     const controlPayload: ControlPayload = {
       prompt: toJsonValue(prompt),
       email: config.defaultContext?.userEmail,
-      chatId: config.defaultContext?.chatId,
+      chatId: this.sessionId,
       task: config.defaultContext?.task,
       subTask: config.defaultContext?.subTask,
       tokens: metadata.tokens?.total,
@@ -278,7 +282,7 @@ export class OlakaiSDK {
       prompt: toJsonValue(prompt),
       response: toJsonValue(response),
       email: config.defaultContext?.userEmail,
-      chatId: config.defaultContext?.chatId,
+      chatId: this.sessionId,
       task: config.defaultContext?.task,
       subTask: config.defaultContext?.subTask,
       tokens: metadata.tokens?.total,
@@ -286,15 +290,6 @@ export class OlakaiSDK {
       blocked,
       errorMessage,
       llmMetadata: metadata,
-      // Add LLM metadata to custom data for visibility
-      customData: {
-        provider: metadata.provider,
-        model: metadata.model,
-        finishReason: metadata.finishReason,
-        promptTokens: metadata.tokens?.prompt,
-        completionTokens: metadata.tokens?.completion,
-        totalTokens: metadata.tokens?.total,
-      },
     };
 
     try {
@@ -373,6 +368,80 @@ export class OlakaiSDK {
    */
   getConfig(): EnhancedSDKConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Event-based tracking function
+   * Fire and forget - does not await the API call
+   * @param params - Event parameters
+   */
+  event(params: OlakaiEventParams): void {
+    if (!this.initialized) {
+      console.warn("[Olakai SDK] SDK not initialized. Call init() first.");
+      return;
+    }
+
+    // Fire and forget - don't await
+    this.report(params.prompt, params.response, {
+      email: params.userEmail,
+      task: params.task,
+      subTask: params.subTask,
+      tokens: params.tokens,
+      requestTime: params.requestTime,
+      shouldScore: params.shouldScore,
+      customData: params.customData,
+      sanitize: false, // Don't sanitize for event-based usage
+    }).catch((error) => {
+      // Silent fail for event-based usage
+      if (typeof console !== "undefined" && console.warn) {
+        console.warn("[Olakai SDK] Failed to track event:", error);
+      }
+    });
+  }
+
+  /**
+   * Report an AI interaction event directly to Olakai
+   * @param prompt - The input/prompt sent to the AI
+   * @param response - The response received from the AI
+   * @param options - Optional parameters for the report
+   * @returns Promise that resolves when the report is sent
+   */
+  private async report(
+    prompt: any,
+    response: any,
+    options?: {
+      email?: string;
+      task?: string;
+      subTask?: string;
+      tokens?: number;
+      requestTime?: number;
+      shouldScore?: boolean;
+      sanitize?: boolean;
+      priority?: "low" | "normal" | "high";
+      customData?: Record<string, string | number | boolean | undefined>;
+    },
+  ): Promise<void> {
+    try {
+      const payload = {
+        prompt: toJsonValue(prompt, options?.sanitize),
+        response: toJsonValue(response, options?.sanitize),
+        email: options?.email || "anonymous@olakai.ai",
+        chatId: this.sessionId,
+        task: options?.task,
+        subTask: options?.subTask,
+        tokens: options?.tokens || 0,
+        requestTime: options?.requestTime || 0,
+        blocked: false,
+        sensitivity: [],
+        shouldScore: options?.shouldScore,
+        customData: options?.customData,
+      };
+
+      await sendToAPI(payload, "monitoring");
+    } catch (error) {
+      // Log error but don't throw - reporting should be fail-safe
+      console.warn("[Olakai SDK] Failed to report event:", error);
+    }
   }
 
   /**

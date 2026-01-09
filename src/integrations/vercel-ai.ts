@@ -457,15 +457,6 @@ export class VercelAIIntegration {
       blocked,
       errorMessage,
       llmMetadata: metadata,
-      // Add LLM metadata to custom data for visibility
-      customData: {
-        provider: metadata.provider,
-        model: metadata.model,
-        finishReason: metadata.finishReason,
-        promptTokens: metadata.tokens?.prompt,
-        completionTokens: metadata.tokens?.completion,
-        totalTokens: metadata.tokens?.total,
-      },
     };
 
     try {
