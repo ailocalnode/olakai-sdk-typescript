@@ -269,7 +269,7 @@ async function sendWithRetry(
 export async function sendToAPI(
   payload: MonitorPayload | ControlPayload,
   role: "monitoring" | "control" = "monitoring",
-): Promise<void> {
+): Promise<ControlAPIResponse | void> {
   if (!config.apiKey) {
     throw new APIKeyMissingError("[Olakai SDK] API key is not set");
   }
@@ -300,7 +300,7 @@ export async function sendToAPI(
     }
   } else if (role === "control") {
     try {
-      (await sendWithRetry(
+      return (await sendWithRetry(
         payload as ControlPayload,
         config.retries!,
         "control",
