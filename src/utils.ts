@@ -239,10 +239,12 @@ export async function sleep(ms: number): Promise<void> {
 export function olakaiLogger(
   message: string,
   level: "info" | "warn" | "error" = "info",
+  verbose: boolean = false,
 ): void {
   switch (level) {
     case "info":
-      console.log(`[Olakai SDK] ${message}`);
+      if (verbose)
+        console.log(`[Olakai SDK] ${message}`);
       break;
     case "warn":
       console.warn(`[Olakai SDK] ${message}`);

@@ -83,7 +83,7 @@ export class OlakaiSDK {
     });
 
     this.initialized = true;
-    olakaiLogger("[Olakai SDK] Initialized successfully", "info");
+    olakaiLogger("Initialized successfully", "info", this.config.debug);
   }
 
   /**
@@ -178,7 +178,7 @@ export class OlakaiSDK {
       }
       // Log other errors but don't break the user's flow
       olakaiLogger(
-        `[Olakai SDK] Error in monitoring: ${error}`,
+        `Error in monitoring: ${error}`,
         "error",
       );
     }
@@ -208,7 +208,7 @@ export class OlakaiSDK {
       );
     } catch (monitoringError) {
       olakaiLogger(
-        `[Olakai SDK] Error in error monitoring: ${monitoringError}`,
+        `Error in error monitoring: ${monitoringError}`,
         "error",
       );
     }
@@ -261,7 +261,7 @@ export class OlakaiSDK {
       }
       // Log control API errors but allow execution to continue
       olakaiLogger(
-        `[Olakai SDK] Control API error (allowing execution): ${error}`,
+        `Control API error (allowing execution): ${error}`,
         "warn",
       );
     }
@@ -295,12 +295,13 @@ export class OlakaiSDK {
     try {
       await sendToAPI(payload as MonitorPayload, "monitoring");
       olakaiLogger(
-        "[Olakai SDK] Monitoring data sent successfully",
+        "Monitoring data sent successfully",
         "info",
+        this.config.debug,
       );
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Failed to send monitoring data: ${error}`,
+        `Failed to send monitoring data: ${error}`,
         "error",
       );
       // Don't throw - monitoring failures shouldn't break user's code
@@ -331,7 +332,7 @@ export class OlakaiSDK {
       return "Unable to extract prompt";
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Error extracting prompt: ${error}`,
+        `Error extracting prompt: ${error}`,
         "error",
       );
       return "Error extracting prompt";
@@ -356,7 +357,7 @@ export class OlakaiSDK {
       return "Unable to extract response";
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Error extracting response: ${error}`,
+        `Error extracting response: ${error}`,
         "error",
       );
       return "Error extracting response";
@@ -377,11 +378,12 @@ export class OlakaiSDK {
    */
   event(params: OlakaiEventParams): void {
     if (!this.initialized) {
-      console.warn("[Olakai SDK] SDK not initialized. Call init() first.");
+      olakaiLogger("SDK not initialized. Call init() first.", "warn");
       return;
     }
 
     // Fire and forget - don't await
+    olakaiLogger(`Sending event: ${JSON.stringify(params)}`, "info", this.config.debug);
     this.report(params.prompt, params.response, {
       email: params.userEmail,
       task: params.task,
@@ -392,10 +394,7 @@ export class OlakaiSDK {
       customData: params.customData,
       sanitize: false, // Don't sanitize for event-based usage
     }).catch((error) => {
-      // Silent fail for event-based usage
-      if (typeof console !== "undefined" && console.warn) {
-        console.warn("[Olakai SDK] Failed to track event:", error);
-      }
+        olakaiLogger(`Failed to track event: ${error}`, "error");
     });
   }
 
