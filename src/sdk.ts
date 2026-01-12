@@ -7,11 +7,12 @@ import type {
   ControlPayload,
   ControlAPIResponse,
   VercelAIContext,
+  OlakaiEventParams,
 } from "./types";
 import { OpenAIProvider } from "./providers/openai";
 import { VercelAIIntegration } from "./integrations/vercel-ai";
-import { sendToAPI, getConfig, initClient } from "./client";
-import { olakaiLogger, toJsonValue } from "./utils";
+import { sendToAPI, initClient } from "./client";
+import { createId, olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import packageJson from "../package.json";
 
@@ -23,6 +24,7 @@ export class OlakaiSDK {
   private config: EnhancedSDKConfig;
   private initialized: boolean = false;
   private vercelAI: VercelAIIntegration;
+  private sessionId: string;
 
   private static readonly DEFAULT_ENDPOINT = "https://app.olakai.ai";
 
@@ -60,6 +62,8 @@ export class OlakaiSDK {
       enableControl: this.config.enableControl,
       debug: this.config.debug,
     });
+
+    this.sessionId = createId();
   }
 
   /**
@@ -79,7 +83,7 @@ export class OlakaiSDK {
     });
 
     this.initialized = true;
-    olakaiLogger("[Olakai SDK] Initialized successfully", "info");
+    olakaiLogger("Initialized successfully", "info", this.config.debug);
   }
 
   /**
@@ -174,7 +178,7 @@ export class OlakaiSDK {
       }
       // Log other errors but don't break the user's flow
       olakaiLogger(
-        `[Olakai SDK] Error in monitoring: ${error}`,
+        `Error in monitoring: ${error}`,
         "error",
       );
     }
@@ -204,7 +208,7 @@ export class OlakaiSDK {
       );
     } catch (monitoringError) {
       olakaiLogger(
-        `[Olakai SDK] Error in error monitoring: ${monitoringError}`,
+        `Error in error monitoring: ${monitoringError}`,
         "error",
       );
     }
@@ -221,7 +225,7 @@ export class OlakaiSDK {
     const controlPayload: ControlPayload = {
       prompt: toJsonValue(prompt),
       email: config.defaultContext?.userEmail,
-      chatId: config.defaultContext?.chatId,
+      chatId: this.sessionId,
       task: config.defaultContext?.task,
       subTask: config.defaultContext?.subTask,
       tokens: metadata.tokens?.total,
@@ -257,7 +261,7 @@ export class OlakaiSDK {
       }
       // Log control API errors but allow execution to continue
       olakaiLogger(
-        `[Olakai SDK] Control API error (allowing execution): ${error}`,
+        `Control API error (allowing execution): ${error}`,
         "warn",
       );
     }
@@ -278,7 +282,7 @@ export class OlakaiSDK {
       prompt: toJsonValue(prompt),
       response: toJsonValue(response),
       email: config.defaultContext?.userEmail,
-      chatId: config.defaultContext?.chatId,
+      chatId: this.sessionId,
       task: config.defaultContext?.task,
       subTask: config.defaultContext?.subTask,
       tokens: metadata.tokens?.total,
@@ -286,28 +290,18 @@ export class OlakaiSDK {
       blocked,
       errorMessage,
       llmMetadata: metadata,
-      // Add LLM metadata to custom dimensions for visibility
-      customDimensions: {
-        dim1: metadata.provider,
-        dim2: metadata.model,
-        dim3: metadata.finishReason,
-      },
-      customMetrics: {
-        metric1: metadata.tokens?.prompt,
-        metric2: metadata.tokens?.completion,
-        metric3: metadata.tokens?.total,
-      },
     };
 
     try {
       await sendToAPI(payload as MonitorPayload, "monitoring");
       olakaiLogger(
-        "[Olakai SDK] Monitoring data sent successfully",
+        "Monitoring data sent successfully",
         "info",
+        this.config.debug,
       );
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Failed to send monitoring data: ${error}`,
+        `Failed to send monitoring data: ${error}`,
         "error",
       );
       // Don't throw - monitoring failures shouldn't break user's code
@@ -338,7 +332,7 @@ export class OlakaiSDK {
       return "Unable to extract prompt";
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Error extracting prompt: ${error}`,
+        `Error extracting prompt: ${error}`,
         "error",
       );
       return "Error extracting prompt";
@@ -363,7 +357,7 @@ export class OlakaiSDK {
       return "Unable to extract response";
     } catch (error) {
       olakaiLogger(
-        `[Olakai SDK] Error extracting response: ${error}`,
+        `Error extracting response: ${error}`,
         "error",
       );
       return "Error extracting response";
@@ -375,6 +369,78 @@ export class OlakaiSDK {
    */
   getConfig(): EnhancedSDKConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Event-based tracking function
+   * Fire and forget - does not await the API call
+   * @param params - Event parameters
+   */
+  event(params: OlakaiEventParams): void {
+    if (!this.initialized) {
+      olakaiLogger("SDK not initialized. Call init() first.", "warn");
+      return;
+    }
+
+    // Fire and forget - don't await
+    olakaiLogger(`Sending event: ${JSON.stringify(params)}`, "info", this.config.debug);
+    this.report(params.prompt, params.response, {
+      email: params.userEmail,
+      task: params.task,
+      subTask: params.subTask,
+      tokens: params.tokens,
+      requestTime: params.requestTime,
+      shouldScore: params.shouldScore,
+      customData: params.customData,
+      sanitize: false, // Don't sanitize for event-based usage
+    }).catch((error) => {
+        olakaiLogger(`Failed to track event: ${error}`, "error");
+    });
+  }
+
+  /**
+   * Report an AI interaction event directly to Olakai
+   * @param prompt - The input/prompt sent to the AI
+   * @param response - The response received from the AI
+   * @param options - Optional parameters for the report
+   * @returns Promise that resolves when the report is sent
+   */
+  private async report(
+    prompt: any,
+    response: any,
+    options?: {
+      email?: string;
+      task?: string;
+      subTask?: string;
+      tokens?: number;
+      requestTime?: number;
+      shouldScore?: boolean;
+      sanitize?: boolean;
+      priority?: "low" | "normal" | "high";
+      customData?: Record<string, string | number | boolean | undefined>;
+    },
+  ): Promise<void> {
+    try {
+      const payload = {
+        prompt: toJsonValue(prompt, options?.sanitize),
+        response: toJsonValue(response, options?.sanitize),
+        email: options?.email || "anonymous@olakai.ai",
+        chatId: this.sessionId,
+        task: options?.task,
+        subTask: options?.subTask,
+        tokens: options?.tokens || 0,
+        requestTime: options?.requestTime || 0,
+        blocked: false,
+        sensitivity: [],
+        shouldScore: options?.shouldScore,
+        customData: options?.customData,
+      };
+
+      await sendToAPI(payload, "monitoring");
+    } catch (error) {
+      // Log error but don't throw - reporting should be fail-safe
+      console.warn("[Olakai SDK] Failed to report event:", error);
+    }
   }
 
   /**

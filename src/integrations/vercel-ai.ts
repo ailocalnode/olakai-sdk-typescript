@@ -457,17 +457,6 @@ export class VercelAIIntegration {
       blocked,
       errorMessage,
       llmMetadata: metadata,
-      // Add LLM metadata to custom dimensions for visibility
-      customDimensions: {
-        dim1: metadata.provider,
-        dim2: metadata.model,
-        dim3: metadata.finishReason,
-      },
-      customMetrics: {
-        metric1: metadata.tokens?.prompt,
-        metric2: metadata.tokens?.completion,
-        metric3: metadata.tokens?.total,
-      },
     };
 
     try {

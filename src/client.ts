@@ -72,7 +72,7 @@ export async function initClient(
       "[Olakai SDK] API key is not set. Please provide a valid apiKey in the configuration.",
     );
   }
-  olakaiLogger(`Config: ${JSON.stringify(config)}`, "info");
+  olakaiLogger(`Config: ${JSON.stringify(config)}`, "info", config.debug);
 }
 
 /**
@@ -116,7 +116,7 @@ async function makeAPICall(
     url = config.controlEndpoint;
   }
 
-  olakaiLogger(`Making API call to ${role} endpoint: ${url}`, "info");
+  olakaiLogger(`Making API call to ${role} endpoint: ${url}`, "info", config.debug);
 
   try {
     const response = await fetch(url, {
@@ -127,7 +127,7 @@ async function makeAPICall(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    olakaiLogger(`API call response: ${response.status}`, "info");
+    olakaiLogger(`API call response: ${response.status}`, "info", config.debug);
     let responseData: MonitoringAPIResponse | ControlAPIResponse = {} as
       | MonitoringAPIResponse
       | ControlAPIResponse;
@@ -137,7 +137,7 @@ async function makeAPICall(
       responseData = (await response.json()) as ControlAPIResponse;
     }
 
-    olakaiLogger(`API response: ${JSON.stringify(responseData)}`, "info");
+    olakaiLogger(`API response: ${JSON.stringify(responseData)}`, "info", config.debug);
 
     clearTimeout(timeoutId);
 
@@ -148,6 +148,7 @@ async function makeAPICall(
         olakaiLogger(
           `Request succeeded: ${JSON.stringify(responseData)}`,
           "info",
+          config.debug,
         );
         return responseData;
       } else if (response.status === ErrorCode.PARTIAL_SUCCESS) {
@@ -223,7 +224,8 @@ async function sendWithRetry(
         } else if (response.failureCount && response.failureCount > 0) {
           olakaiLogger(
             `Request partial success: ${response.successCount}/${response.totalRequests} requests succeeded`,
-            "info",
+            "info", 
+            config.debug,
           );
           return response;
         }
@@ -267,7 +269,7 @@ async function sendWithRetry(
 export async function sendToAPI(
   payload: MonitorPayload | ControlPayload,
   role: "monitoring" | "control" = "monitoring",
-): Promise<void> {
+): Promise<ControlAPIResponse | void> {
   if (!config.apiKey) {
     throw new APIKeyMissingError("[Olakai SDK] API key is not set");
   }
@@ -285,9 +287,11 @@ export async function sendToAPI(
         response.totalRequests !== undefined &&
         response.successCount !== undefined
       ) {
+        const level = response.failureCount && response.failureCount > 0 ? "warn" : "info";
         olakaiLogger(
           `API call result: ${response.successCount}/${response.totalRequests} requests succeeded`,
-          response.failureCount && response.failureCount > 0 ? "warn" : "info",
+          level,
+          level === "info" && config.debug,
         );
       }
     } catch (error) {
@@ -296,7 +300,7 @@ export async function sendToAPI(
     }
   } else if (role === "control") {
     try {
-      (await sendWithRetry(
+      return (await sendWithRetry(
         payload as ControlPayload,
         config.retries!,
         "control",

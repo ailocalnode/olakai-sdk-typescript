@@ -9,8 +9,7 @@ export type OlakaiEventParams = {
   tokens?: number;
   requestTime?: number;
   shouldScore?: boolean; // Whether to score this activity
-  customDimensions?: Record<string, string | undefined>;
-  customMetrics?: Record<string, number | undefined>;
+  customData?: Record<string, string | number | boolean | undefined>;
 };
 
 export type MonitorPayload = {
@@ -27,8 +26,7 @@ export type MonitorPayload = {
   blocked?: boolean;
   sensitivity?: string[];
   shouldScore?: boolean;
-  customDimensions?: Record<string, string | undefined>;
-  customMetrics?: Record<string, number | undefined>;
+  customData?: Record<string, string | number | boolean | undefined>;
 };
 
 /**
@@ -185,8 +183,7 @@ export type LLMWrapperConfig = {
     chatId?: string;
     task?: string;
     subTask?: string;
-    customDimensions?: Record<string, string | undefined>;
-    customMetrics?: Record<string, number | undefined>;
+    customData?: Record<string, string | number | boolean | undefined>;
   };
   enableControl?: boolean; // Whether to use Control API (default: false)
   sanitize?: boolean;
@@ -211,8 +208,7 @@ export type VercelAIContext = {
   apiKey?: string; // Provider API key for cost tracking
   enableControl?: boolean; // Override global Control API setting
   sanitize?: boolean;
-  customDimensions?: Record<string, string | undefined>;
-  customMetrics?: Record<string, number | undefined>;
+  customData?: Record<string, string | number | boolean | undefined>;
 };
 
 /**

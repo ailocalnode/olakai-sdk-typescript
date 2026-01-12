@@ -134,8 +134,8 @@ olakai("event", "ai_activity", {
   response: description,
   task: "Content Generation",
   tokens: response.usage?.total_tokens || 0, // Manual!
-  customDimensions: {
-    dim1: "gpt-4" // Manual!
+  customData: {
+    model: "gpt-4" // Manual!
   }
 });
 ```
@@ -259,12 +259,10 @@ olakai("event", "ai_activity", {
   userEmail: 'user@example.com',
   tokens, // Manual
   requestTime, // Manual
-  customDimensions: {
-    dim1: 'gpt-4', // Manual
-    dim2: '0.7', // Manual temperature
-  },
-  customMetrics: {
-    metric1: tokens // Manual duplicate
+  customData: {
+    model: 'gpt-4',    // Manual
+    temperature: 0.7,  // Manual
+    tokenCount: tokens // Manual duplicate
   }
 });
 ```

@@ -5,6 +5,47 @@ All notable changes to the Olakai SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-01-07
+
+### Changed
+
+- **BREAKING:** Unified `customDimensions` and `customMetrics` into single `customData` field
+  - Type: `Record<string, string | number | boolean | undefined>`
+  - Allows mixed value types (strings, numbers, booleans) in a single object
+  - Use descriptive keys instead of `dim1-5` and `metric1-5` patterns
+
+### Migration
+
+Replace separate dimension/metric objects with unified `customData`:
+
+```typescript
+// Before (1.x)
+olakai("event", "ai_activity", {
+  prompt,
+  response,
+  customDimensions: {
+    dim1: "gpt-4",
+    dim2: "e-commerce",
+  },
+  customMetrics: {
+    metric1: 150,
+    metric2: 2.5,
+  },
+});
+
+// After (2.0)
+olakai("event", "ai_activity", {
+  prompt,
+  response,
+  customData: {
+    model: "gpt-4",
+    domain: "e-commerce",
+    tokenCount: 150,
+    processingTime: 2.5,
+  },
+});
+```
+
 ## [1.6.0] - 2024-12-30
 
 ### Added

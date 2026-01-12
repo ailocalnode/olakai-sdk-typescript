@@ -1,3 +1,4 @@
+import { uuidv7 } from "uuidv7";
 import type {
   SDKConfig,
   JsonValue,
@@ -238,10 +239,12 @@ export async function sleep(ms: number): Promise<void> {
 export function olakaiLogger(
   message: string,
   level: "info" | "warn" | "error" = "info",
+  verbose: boolean = false,
 ): void {
   switch (level) {
     case "info":
-      console.log(`[Olakai SDK] ${message}`);
+      if (verbose)
+        console.log(`[Olakai SDK] ${message}`);
       break;
     case "warn":
       console.warn(`[Olakai SDK] ${message}`);
@@ -250,4 +253,9 @@ export function olakaiLogger(
       console.error(`[Olakai SDK] ${message}`);
       break;
   }
+}
+
+export function createId(): string {
+  const removeDashes = uuidv7().replaceAll("-", "");
+  return removeDashes.substring(removeDashes.length - 25);
 }
