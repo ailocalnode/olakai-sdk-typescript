@@ -15,6 +15,7 @@ import { sendToAPI, initClient } from "./client";
 import { createId, olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import packageJson from "../package.json";
+import { BaseLLMProvider, GoogleProvider } from "./providers";
 
 /**
  * Main Olakai SDK class
@@ -92,22 +93,20 @@ export class OlakaiSDK {
    * @param config - Configuration for the wrapper
    * @returns Wrapped client with automatic tracking
    */
-  wrap<TClient = any>(
-    client: TClient,
-    config: LLMWrapperConfig,
-  ): TClient {
+  wrap<TClient = any>(client: TClient, config: LLMWrapperConfig): TClient {
     if (!this.initialized) {
-      throw new Error(
-        "[Olakai SDK] SDK not initialized. Call init() first.",
-      );
+      throw new Error("[Olakai SDK] SDK not initialized. Call init() first.");
     }
 
     // Select provider based on config
-    let provider: OpenAIProvider;
+    let provider: BaseLLMProvider;
 
     switch (config.provider) {
       case "openai":
         provider = new OpenAIProvider(config);
+        break;
+      case "google":
+        provider = new GoogleProvider(config);
         break;
       case "anthropic":
         throw new Error(
@@ -394,7 +393,7 @@ export class OlakaiSDK {
       customData: params.customData,
       sanitize: false, // Don't sanitize for event-based usage
     }).catch((error) => {
-        olakaiLogger(`Failed to track event: ${error}`, "error");
+      olakaiLogger(`Failed to track event: ${error}`, "error");
     });
   }
 
