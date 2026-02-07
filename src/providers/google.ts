@@ -37,7 +37,7 @@ export class GoogleProvider extends BaseLLMProvider {
   }
 
   /**
-   * Wrap the models object to intercept generateContent, generateContentStream, and startChat
+   * Wrap the models object to intercept generateContent and generateContentStream
    */
   private wrapModels(models: any, client: any): any {
     const self = this;
@@ -57,43 +57,6 @@ export class GoogleProvider extends BaseLLMProvider {
           typeof original === "function"
         ) {
           return self.wrapGenerateContentStream(original.bind(target), client);
-        }
-
-        // Wrap startChat to return a wrapped chat session
-        if (prop === "startChat" && typeof original === "function") {
-          return function (this: any, ...args: any[]) {
-            const chat = original.apply(target, args);
-            return self.wrapChatSession(chat, client);
-          };
-        }
-
-        return original;
-      },
-    });
-  }
-
-  /**
-   * Wrap a ChatSession instance to capture sendMessage calls
-   */
-  private wrapChatSession(chat: any, client: any, modelName?: string): any {
-    const self = this;
-
-    return new Proxy(chat, {
-      get(target, prop) {
-        const original = target[prop];
-
-        // Wrap sendMessage method
-        if (prop === "sendMessage" && typeof original === "function") {
-          return self.wrapSendMessage(original.bind(target), client, modelName);
-        }
-
-        // Wrap sendMessageStream method
-        if (prop === "sendMessageStream" && typeof original === "function") {
-          return self.wrapSendMessageStream(
-            original.bind(target),
-            client,
-            modelName,
-          );
         }
 
         return original;
@@ -149,7 +112,7 @@ export class GoogleProvider extends BaseLLMProvider {
 
         // Send to Olakai monitoring
         if (typeof (self as any).onLLMCall === "function") {
-          (self as any).onLLMCall(request, response, metadata);
+          (self as any).onLLMCall(request.contents, response.text, metadata);
         }
 
         return response;
@@ -173,7 +136,7 @@ export class GoogleProvider extends BaseLLMProvider {
 
         // Send error to monitoring
         if (typeof (self as any).onLLMError === "function") {
-          (self as any).onLLMError(request, error, errorMetadata);
+          (self as any).onLLMError(request.contents, error, errorMetadata);
         }
 
         throw error;
@@ -210,36 +173,16 @@ export class GoogleProvider extends BaseLLMProvider {
         // Call original method
         const response = await originalMethod.apply(this, args);
 
-        const endTime = Date.now();
-
-        // For streaming, we can't easily extract response metadata
-        // without consuming the stream, so we capture what we can
-        const metadata: LLMMetadata = {
-          provider: "google",
-          model: request.model || "unknown",
+        // Wrap the response to capture chunks as they're consumed
+        const wrappedResponse = self.wrapStreamResponse(
+          response,
+          request,
           apiKey,
-          ...requestMetadata,
-          streamMode: true,
-          timing: {
-            startTime,
-            endTime,
-            duration: endTime - startTime,
-          },
-        };
-
-        olakaiLogger(
-          `[Google Wrapper] Captured stream metadata: ${JSON.stringify(
-            metadata,
-          )}`,
-          "info",
+          requestMetadata,
+          startTime,
         );
 
-        // Send to Olakai monitoring
-        if (typeof (self as any).onLLMCall === "function") {
-          (self as any).onLLMCall(request, response, metadata);
-        }
-
-        return response;
+        return wrappedResponse;
       } catch (error) {
         const endTime = Date.now();
 
@@ -259,7 +202,7 @@ export class GoogleProvider extends BaseLLMProvider {
         olakaiLogger(`[Google Wrapper] Stream error: ${error}`, "error");
 
         if (typeof (self as any).onLLMError === "function") {
-          (self as any).onLLMError(request, error, errorMetadata);
+          (self as any).onLLMError(request.contents, error, errorMetadata);
         }
 
         throw error;
@@ -268,163 +211,186 @@ export class GoogleProvider extends BaseLLMProvider {
   }
 
   /**
-   * Wrap the sendMessage method to capture metadata
+   * Wrap a stream response to capture chunks and call onLLMCall when complete
    */
-  private wrapSendMessage(
-    originalMethod: Function,
-    client: any,
-    modelName?: string,
-  ): Function {
+  private wrapStreamResponse(
+    response: any,
+    request: any,
+    apiKey: string | undefined,
+    requestMetadata: Partial<LLMMetadata>,
+    startTime: number,
+  ): any {
     const self = this;
+    let accumulatedText = "";
+    let callbackFired = false;
 
-    return async function (this: any, ...args: any[]) {
-      const startTime = Date.now();
-      const message = args[0];
+    // Helper to fire the callback once when streaming is complete
+    const fireCallback = (finalResponse?: any) => {
+      if (callbackFired) return;
+      callbackFired = true;
+
+      const endTime = Date.now();
+
+      // Extract response metadata if available
+      const responseMetadata = finalResponse
+        ? self.extractResponseMetadata(finalResponse)
+        : {};
+
+      const metadata: LLMMetadata = {
+        provider: "google",
+        model: request.model || "unknown",
+        apiKey,
+        ...requestMetadata,
+        ...responseMetadata,
+        streamMode: true,
+        timing: {
+          startTime,
+          endTime,
+          duration: endTime - startTime,
+        },
+      };
 
       olakaiLogger(
-        `[Google Wrapper] Intercepted chat.sendMessage call`,
+        `[Google Wrapper] Stream complete, captured ${accumulatedText.length} chars`,
         "info",
       );
 
-      // Extract API key from client
-      const apiKey = self.extractApiKey(client);
-
-      try {
-        // Call original method
-        const response = await originalMethod.apply(this, args);
-
-        const endTime = Date.now();
-
-        // Extract response metadata
-        const responseMetadata = self.extractResponseMetadata(response);
-
-        // Combine metadata
-        const metadata: LLMMetadata = {
-          provider: "google",
-          model: modelName || "unknown",
-          apiKey,
-          ...responseMetadata,
-          timing: {
-            startTime,
-            endTime,
-            duration: endTime - startTime,
-          },
-        };
-
-        olakaiLogger(
-          `[Google Wrapper] Captured chat metadata: ${JSON.stringify(
-            metadata,
-          )}`,
-          "info",
-        );
-
-        // Send to Olakai monitoring
-        if (typeof (self as any).onLLMCall === "function") {
-          (self as any).onLLMCall({ message }, response, metadata);
-        }
-
-        return response;
-      } catch (error) {
-        const endTime = Date.now();
-
-        const errorMetadata: LLMMetadata = {
-          provider: "google",
-          model: modelName || "unknown",
-          apiKey,
-          timing: {
-            startTime,
-            endTime,
-            duration: endTime - startTime,
-          },
-        };
-
-        olakaiLogger(`[Google Wrapper] Chat error: ${error}`, "error");
-
-        if (typeof (self as any).onLLMError === "function") {
-          (self as any).onLLMError({ message }, error, errorMetadata);
-        }
-
-        throw error;
+      if (typeof (self as any).onLLMCall === "function") {
+        (self as any).onLLMCall(request.contents, accumulatedText, metadata);
       }
     };
+
+    // Create wrapped async iterator that accumulates text
+    const createWrappedIterator = (originalIterator: AsyncIterator<any>) => {
+      return {
+        async next(): Promise<IteratorResult<any>> {
+          const result = await originalIterator.next();
+
+          if (result.done) {
+            // Stream complete - fire the callback
+            fireCallback();
+          } else if (result.value) {
+            // Extract text from chunk and accumulate
+            const chunk = result.value;
+            const chunkText = self.extractTextFromChunk(chunk);
+            if (chunkText) {
+              accumulatedText += chunkText;
+            }
+          }
+
+          return result;
+        },
+        async return(value?: any): Promise<IteratorResult<any>> {
+          // Called when iteration is terminated early (break, return, throw)
+          fireCallback();
+          if (originalIterator.return) {
+            return originalIterator.return(value);
+          }
+          return { done: true, value };
+        },
+        async throw(error?: any): Promise<IteratorResult<any>> {
+          if (originalIterator.throw) {
+            return originalIterator.throw(error);
+          }
+          throw error;
+        },
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+      };
+    };
+
+    // Create a proxy that intercepts the stream property
+    return new Proxy(response, {
+      get(target, prop) {
+        const original = target[prop];
+
+        // Wrap the stream property (async iterable)
+        if (prop === "stream" && original) {
+          // If it's an async iterable, wrap it
+          if (typeof original[Symbol.asyncIterator] === "function") {
+            return {
+              [Symbol.asyncIterator]() {
+                const originalIterator = original[Symbol.asyncIterator]();
+                return createWrappedIterator(originalIterator);
+              },
+            };
+          }
+        }
+
+        // Wrap the response promise to fire callback when it resolves
+        if (prop === "response" && original instanceof Promise) {
+          return original.then((finalResponse: any) => {
+            // Extract accumulated text from final response if we haven't already
+            if (!callbackFired && finalResponse) {
+              const text = self.extractTextFromResponse(finalResponse);
+              if (text && !accumulatedText) {
+                accumulatedText = text;
+              }
+            }
+            fireCallback(finalResponse);
+            return finalResponse;
+          });
+        }
+
+        // For Symbol.asyncIterator directly on response (some versions)
+        if (prop === Symbol.asyncIterator && typeof original === "function") {
+          return function () {
+            const originalIterator = original.call(target);
+            return createWrappedIterator(originalIterator);
+          };
+        }
+
+        return original;
+      },
+    });
   }
 
   /**
-   * Wrap the sendMessageStream method to capture metadata
+   * Extract text content from a stream chunk
    */
-  private wrapSendMessageStream(
-    originalMethod: Function,
-    client: any,
-    modelName?: string,
-  ): Function {
-    const self = this;
-
-    return async function (this: any, ...args: any[]) {
-      const startTime = Date.now();
-      const message = args[0];
-
-      olakaiLogger(
-        `[Google Wrapper] Intercepted chat.sendMessageStream call`,
-        "info",
-      );
-
-      // Extract API key from client
-      const apiKey = self.extractApiKey(client);
-
-      try {
-        // Call original method
-        const response = await originalMethod.apply(this, args);
-
-        const endTime = Date.now();
-
-        const metadata: LLMMetadata = {
-          provider: "google",
-          model: modelName || "unknown",
-          apiKey,
-          streamMode: true,
-          timing: {
-            startTime,
-            endTime,
-            duration: endTime - startTime,
-          },
-        };
-
-        olakaiLogger(
-          `[Google Wrapper] Captured chat stream metadata: ${JSON.stringify(
-            metadata,
-          )}`,
-          "info",
-        );
-
-        if (typeof (self as any).onLLMCall === "function") {
-          (self as any).onLLMCall({ message }, response, metadata);
-        }
-
-        return response;
-      } catch (error) {
-        const endTime = Date.now();
-
-        const errorMetadata: LLMMetadata = {
-          provider: "google",
-          model: modelName || "unknown",
-          apiKey,
-          streamMode: true,
-          timing: {
-            startTime,
-            endTime,
-            duration: endTime - startTime,
-          },
-        };
-
-        olakaiLogger(`[Google Wrapper] Chat stream error: ${error}`, "error");
-
-        if (typeof (self as any).onLLMError === "function") {
-          (self as any).onLLMError({ message }, error, errorMetadata);
-        }
-
-        throw error;
+  private extractTextFromChunk(chunk: any): string {
+    try {
+      // Google AI chunks typically have candidates[].content.parts[].text
+      if (chunk?.candidates?.[0]?.content?.parts) {
+        return chunk.candidates[0].content.parts
+          .map((part: any) => part.text || "")
+          .join("");
       }
-    };
+      // Some versions have a text() method
+      if (typeof chunk?.text === "function") {
+        return chunk.text();
+      }
+      // Or a text property
+      if (typeof chunk?.text === "string") {
+        return chunk.text;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  /**
+   * Extract text content from a final response object
+   */
+  private extractTextFromResponse(response: any): string {
+    try {
+      if (typeof response?.text === "function") {
+        return response.text();
+      }
+      if (typeof response?.text === "string") {
+        return response.text;
+      }
+      if (response?.candidates?.[0]?.content?.parts) {
+        return response.candidates[0].content.parts
+          .map((part: any) => part.text || "")
+          .join("");
+      }
+      return "";
+    } catch {
+      return "";
+    }
   }
 
   /**
