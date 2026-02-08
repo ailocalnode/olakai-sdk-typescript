@@ -15,7 +15,11 @@ import { sendToAPI, initClient } from "./client";
 import { createId, olakaiLogger, toJsonValue } from "./utils";
 import { OlakaiBlockedError } from "./exceptions";
 import packageJson from "../package.json";
-import { BaseLLMProvider, GoogleProvider } from "./providers";
+import {
+  AnthropicProvider,
+  BaseLLMProvider,
+  GoogleProvider,
+} from "./providers";
 
 /**
  * Main Olakai SDK class
@@ -109,9 +113,8 @@ export class OlakaiSDK {
         provider = new GoogleProvider(config);
         break;
       case "anthropic":
-        throw new Error(
-          "[Olakai SDK] Anthropic provider not yet implemented",
-        );
+        provider = new AnthropicProvider(config);
+        break;
       case "custom":
         throw new Error(
           "[Olakai SDK] Custom provider requires implementation",
